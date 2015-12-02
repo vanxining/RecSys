@@ -5,58 +5,133 @@ from pymongo import MongoClient
 import numpy as np
 
 
-client = MongoClient()
-db = client.topcoder
+def cmp_datetime(a, b):
+    return -1 if a < b else 1 if a > b else 0
 
 
-def challenges(year_from):
-    condition = {u"postingDate": {u"$gt": datetime(year_from, 1, 1)}}
-    for challenge in db.challenges.find(condition):
-        if u"registrants" not in challenge:
-            continue
+class CF:
+    def __init__(self):
+        self.client = MongoClient()
+        self.db = self.client.topcoder
 
-        yield challenge
+        self.users = {}
+        self.users_reverse = None
 
+        self.m = None
+        self.sim = None
 
-def main(win_times, year_from):
-    num_challenges = 0
+        self.year_from = 2014
+        self.end_date = datetime(2015, 11, 1)
 
-    users = {}
-    user_index = 0
+    def training_set(self):
+        condition = {
+            u"postingDate": {
+                u"$gte": datetime(self.year_from, 1, 1),
+                u"$lt": self.end_date,
+        }}
 
-    for challenge in challenges(year_from):
-        num_challenges += 1
+        for challenge in self.db.challenges.find(condition):
+            if u"registrants" not in challenge:
+                continue
 
-        for reg in challenge[u"registrants"]:
-            handle = reg[u"handle"].lower()
+            yield challenge
 
-            if handle not in users:
-                users[handle] = user_index
-                user_index += 1
+    def test_set(self):
+        condition = {
+            u"postingDate": {
+                u"$gte": self.end_date,
+        }}
 
-    A = np.zeros((num_challenges, user_index + 1), dtype=np.int8)
+        for challenge in self.db.challenges.find(condition):
+            if u"registrants" not in challenge:
+                continue
 
-    for challenge_index, challenge in enumerate(challenges(year_from)):
-        for reg in challenge[u"registrants"]:
-            handle = reg[u"handle"].lower()
+            yield challenge
 
-            user_index = users[handle]
-            A[challenge_index, user_index] = 1
+    def test(self, count, top_n=10):
+        for challenge in self.test_set():
+            regs = challenge[u"registrants"]
+            regs.sort(cmp=lambda x, y: cmp_datetime(x[u"registrationDate"],
+                                                    y[u"registrationDate"]))
 
-    A = np.transpose(A)
-    print A.shape, A.dtype
+            end = count if count >= 1 else len(regs) * count
+            if end >= len(regs):
+                continue
 
-    print np.count_nonzero(A[123])
+            predict = set()
+            real = set(r[u"handle"].lower() for r in regs[end:])
 
-    S = np.zeros((A.shape[0], A.shape[0]), np.int8)
+            for reg in regs[:end]:
+                handle = reg[u"handle"].lower()
+                user_index = self.users[handle]
 
-    R = 456
+                self.calc_similarity(user_index)
 
-    for i in range(S.shape[0]):
-        S[R, i] = np.count_nonzero(np.bitwise_and(A[R], A[i]))
+                indices = np.flatnonzero(self.sim[user_index])
+                a = [(i, int(self.sim[user_index, i])) for i in indices]
 
-    print np.count_nonzero(S[R])
+                if len(a) == 0:
+                    continue
+
+                a.sort(cmp=lambda x, y: y[1] - x[1])
+                a = a if len(a) < top_n else a[:top_n]
+
+                predict |= set(self.users_reverse[i[0]] for i in a)
+
+            if len(predict) > 0:
+                accuracy = (len(real.intersection(predict)) /
+                            float(min(len(real), len(predict))))
+
+                print "Accuracy: %5.2f%%" % (accuracy * 100)
+
+    def calc_similarity(self, user_index):
+        if self.sim[user_index, self.sim.shape[0]] == 1:
+            return
+
+        for i in range(self.sim.shape[0]):
+            inter = np.bitwise_and(self.m[user_index], self.m[i])
+            self.sim[user_index, i] = np.count_nonzero(inter)
+
+        self.sim[user_index, user_index] = 0
+        self.sim[user_index, self.sim.shape[0]] = 1
+
+    def train(self):
+        num_challenges = 0
+        user_index = 0
+
+        for challenge in self.training_set():
+            num_challenges += 1
+
+            for reg in challenge[u"registrants"]:
+                handle = reg[u"handle"].lower()
+
+                if handle not in self.users:
+                    self.users[handle] = user_index
+                    user_index += 1
+
+        num_users = user_index
+
+        self.users_reverse = [None] * num_users
+        for handle in self.users:
+            self.users_reverse[self.users[handle]] = handle
+
+        self.m = np.zeros((num_challenges, num_users), dtype=np.int8)
+
+        for challenge_index, challenge in enumerate(self.training_set()):
+            for reg in challenge[u"registrants"]:
+                handle = reg[u"handle"].lower()
+
+                user_index = self.users[handle]
+                self.m[challenge_index, user_index] = 1
+
+        self.m = np.transpose(self.m)
+
+        # The last column is the "calculated" mark.
+        self.sim = np.zeros((num_users, num_users + 1), dtype=np.int8)
 
 
 if __name__ == '__main__':
-    main(win_times=5, year_from=2014)
+    cf = CF()
+
+    cf.train()
+    cf.test(count=2)

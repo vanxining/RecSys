@@ -25,7 +25,7 @@ class CF:
         self.results = defaultdict(list)
 
         self.year_from = 2014
-        self.end_date = datetime(2015, 10, 25)
+        self.end_date = datetime(2015, 11, 1)
 
     def training_set(self):
         condition = {
@@ -68,10 +68,12 @@ class CF:
                 continue
 
             predict = set()
+            checked = set()
             real = set(r[u"handle"].lower() for r in regs[end:])
 
             for reg in regs[:end]:
                 handle = reg[u"handle"].lower()
+                checked.add(handle)
 
                 # Not ever occurred in the training set.
                 if handle not in self.users:
@@ -88,9 +90,15 @@ class CF:
                     continue
 
                 a.sort(cmp=lambda x, y: y[1] - x[1])
-                a = a if len(a) < top_n else a[:top_n]
 
-                predict |= set(self.users_reverse[i[0]] for i in a)
+                before = len(predict)
+                for t in a:
+                    th = self.users_reverse[t[0]]
+                    if th not in checked and th not in predict:
+                        predict.add(th)
+
+                        if len(predict) - before == top_n:
+                            break
 
             if len(predict) > 0:
                 accuracy = len(real.intersection(predict)) / float(len(real))
@@ -160,7 +168,7 @@ def main():
     cf = CF()
     cf.train()
 
-    args = (1, 2, 3, 4, 0.5)
+    args = (1, 2,)
     for num_seeds in args:
         cf.test(num_seeds)
         print ""

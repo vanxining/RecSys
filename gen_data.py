@@ -25,7 +25,7 @@ class CF:
         self.results = defaultdict(list)
 
         self.year_from = 2014
-        self.end_date = datetime(2015, 11, 1)
+        self.end_date = datetime(2015, 10, 25)
 
     def training_set(self):
         condition = {
@@ -69,17 +69,29 @@ class CF:
 
             predict = set()
             checked = set()
-            real = set(r[u"handle"].lower() for r in regs[end:])
+            real = set()
+
+            newbie_index = len(self.users) + 10000
+            for reg in regs[end:]:
+                handle = reg[u"handle"].lower()
+
+                if handle in self.users:
+                    user_index = self.users[handle]
+                else:
+                    user_index = newbie_index
+                    newbie_index += 1
+
+                real.add(user_index)
 
             for reg in regs[:end]:
                 handle = reg[u"handle"].lower()
-                checked.add(handle)
 
                 # Not ever occurred in the training set.
                 if handle not in self.users:
                     continue
 
                 user_index = self.users[handle]
+                checked.add(user_index)
 
                 self.calc_similarity(user_index)
 
@@ -93,9 +105,8 @@ class CF:
 
                 before = len(predict)
                 for t in a:
-                    th = self.users_reverse[t[0]]
-                    if th not in checked and th not in predict:
-                        predict.add(th)
+                    if t[0] not in checked and t[0] not in predict:
+                        predict.add(t[0])
 
                         if len(predict) - before == top_n:
                             break
@@ -168,7 +179,7 @@ def main():
     cf = CF()
     cf.train()
 
-    args = (1, 2,)
+    args = (1, 2, 3, 4, 0.5,)
     for num_seeds in args:
         cf.test(num_seeds)
         print ""

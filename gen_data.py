@@ -20,6 +20,7 @@ class CF:
 
         self.m = None
         self.sim = None
+        self.calculated = None
 
         self.results = defaultdict(list)
 
@@ -71,7 +72,8 @@ class CF:
 
             for reg in regs[:end]:
                 handle = reg[u"handle"].lower()
-                # Not ever occured in training set
+
+                # Not ever occurred in the training set.
                 if handle not in self.users:
                     continue
 
@@ -80,7 +82,7 @@ class CF:
                 self.calc_similarity(user_index)
 
                 indices = np.flatnonzero(self.sim[user_index])
-                a = [(i, int(self.sim[user_index, i])) for i in indices]
+                a = [(int(i), int(self.sim[user_index, i])) for i in indices]
 
                 if len(a) == 0:
                     continue
@@ -102,20 +104,22 @@ class CF:
                 self.results[challenge["challengeId"]].append(result)
 
                 print challenge["challengeName"]
-                print "> Accuracy: %5.2f%% [#real: % 2d]" % (
+                print "> Accuracy: %5.2f%% [#real: %2d]" % (
                     accuracy * 100, len(real)
                 )
 
     def calc_similarity(self, user_index):
-        if self.sim[user_index, self.sim.shape[0]] == 1:
+        if self.calculated[user_index] == 1:
             return
 
         for i in range(self.sim.shape[0]):
             inter = np.bitwise_and(self.m[user_index], self.m[i])
             self.sim[user_index, i] = np.count_nonzero(inter)
 
+        # sim(self, self) == 0
         self.sim[user_index, user_index] = 0
-        self.sim[user_index, self.sim.shape[0]] = 1
+
+        self.calculated[user_index] = 1
 
     def train(self):
         num_challenges = 0
@@ -148,23 +152,23 @@ class CF:
 
         self.m = np.transpose(self.m)
 
-        # The last column is the "calculated" mark.
-        self.sim = np.zeros((num_users, num_users + 1), dtype=np.int8)
+        self.sim = np.zeros((num_users, num_users), dtype=np.int8)
+        self.calculated = np.zeros(num_users, dtype=np.int8)
 
 
 def main():
     cf = CF()
     cf.train()
 
-    args = (0.5, 1, 2, 3, 4, )
+    args = (1, 2, 3, 4, 0.5)
     for num_seeds in args:
         cf.test(num_seeds)
-        print "-----"
+        print ""
 
     print "#registrants,",
 
     for num_seeds in args:
-        print "#seeds = %d," % num_seeds,
+        print "#seeds = %g," % num_seeds,
 
     print ", name"
 
@@ -172,7 +176,10 @@ def main():
         if len(results) < len(args):
             continue
 
-        print results[0].num_real + args[0], ',',
+        if args[0] >= 1:
+            print results[0].num_real + args[0], ',',
+        else:
+            print ",",
 
         for result in results:
             print "%f," % result.accuracy,

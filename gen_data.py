@@ -1,4 +1,5 @@
 
+from collections import namedtuple, defaultdict
 from datetime import datetime
 from pymongo import MongoClient
 
@@ -20,15 +21,18 @@ class CF:
         self.m = None
         self.sim = None
 
+        self.results = defaultdict(list)
+
         self.year_from = 2014
-        self.end_date = datetime(2015, 11, 1)
+        self.end_date = datetime(2015, 10, 25)
 
     def training_set(self):
         condition = {
             u"postingDate": {
                 u"$gte": datetime(self.year_from, 1, 1),
                 u"$lt": self.end_date,
-        }}
+            }
+        }
 
         for challenge in self.db.challenges.find(condition):
             if u"registrants" not in challenge:
@@ -36,25 +40,29 @@ class CF:
 
             yield challenge
 
-    def test_set(self):
+    def test_set(self, num_registrants_gt):
         condition = {
             u"postingDate": {
                 u"$gte": self.end_date,
-        }}
+            }
+        }
 
         for challenge in self.db.challenges.find(condition):
             if u"registrants" not in challenge:
                 continue
 
-            yield challenge
+            if len(challenge[u"registrants"]) > num_registrants_gt:
+                yield challenge
 
-    def test(self, count, top_n=10):
-        for challenge in self.test_set():
+    def test(self, num_seeds, top_n=10):
+        Result = namedtuple("Result", ["name", "num_real", "accuracy"])
+
+        for challenge in self.test_set(num_registrants_gt=num_seeds):
             regs = challenge[u"registrants"]
             regs.sort(cmp=lambda x, y: cmp_datetime(x[u"registrationDate"],
                                                     y[u"registrationDate"]))
 
-            end = count if count >= 1 else len(regs) * count
+            end = num_seeds if num_seeds >= 1 else int(len(regs) * num_seeds)
             if end >= len(regs):
                 continue
 
@@ -63,6 +71,10 @@ class CF:
 
             for reg in regs[:end]:
                 handle = reg[u"handle"].lower()
+                # Not ever occured in training set
+                if handle not in self.users:
+                    continue
+
                 user_index = self.users[handle]
 
                 self.calc_similarity(user_index)
@@ -79,10 +91,20 @@ class CF:
                 predict |= set(self.users_reverse[i[0]] for i in a)
 
             if len(predict) > 0:
-                accuracy = (len(real.intersection(predict)) /
-                            float(min(len(real), len(predict))))
+                accuracy = len(real.intersection(predict)) / float(len(real))
 
-                print "Accuracy: %5.2f%%" % (accuracy * 100)
+                result = Result(
+                    challenge["challengeName"],
+                    len(real),
+                    accuracy,
+                )
+
+                self.results[challenge["challengeId"]].append(result)
+
+                print challenge["challengeName"]
+                print "> Accuracy: %5.2f%% [#real: % 2d]" % (
+                    accuracy * 100, len(real)
+                )
 
     def calc_similarity(self, user_index):
         if self.sim[user_index, self.sim.shape[0]] == 1:
@@ -130,8 +152,33 @@ class CF:
         self.sim = np.zeros((num_users, num_users + 1), dtype=np.int8)
 
 
-if __name__ == '__main__':
+def main():
     cf = CF()
-
     cf.train()
-    cf.test(count=2)
+
+    args = (0.5, 1, 2, 3, 4, )
+    for num_seeds in args:
+        cf.test(num_seeds)
+        print "-----"
+
+    print "#registrants,",
+
+    for num_seeds in args:
+        print "#seeds = %d," % num_seeds,
+
+    print ", name"
+
+    for results in cf.results.values():
+        if len(results) < len(args):
+            continue
+
+        print results[0].num_real + args[0], ',',
+
+        for result in results:
+            print "%f," % result.accuracy,
+
+        print ',', results[0].name
+
+
+if __name__ == "__main__":
+    main()

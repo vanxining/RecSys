@@ -25,7 +25,6 @@ class CF:
         self.db = self.client.topcoder
 
         self.users = {}
-        self.users_reverse = None
 
         self.m = None
         self.sim = None
@@ -168,10 +167,6 @@ class CF:
                     user_index += 1
 
         num_users = user_index
-
-        self.users_reverse = [None] * num_users
-        for handle in self.users:
-            self.users_reverse[self.users[handle]] = handle
 
         self.m = np.zeros((num_challenges, num_users), dtype=np.int8)
 

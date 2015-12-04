@@ -1,9 +1,18 @@
 
+import sys
+import time
+
+from StringIO import StringIO
+from datetime import datetime
+
 from collections import namedtuple, defaultdict
 from datetime import datetime
 from pymongo import MongoClient
 
 import numpy as np
+
+
+Result = namedtuple("Result", ["name", "num_real", "accuracy"])
 
 
 def cmp_datetime(a, b):
@@ -22,6 +31,7 @@ class CF:
         self.sim = None
         self.calculated = None
 
+        self.time_costs = []
         self.results = defaultdict(list)
 
         self.year_from = 2014
@@ -41,7 +51,7 @@ class CF:
 
             yield challenge
 
-    def test_set(self, num_registrants_gt):
+    def test_set(self):
         condition = {
             u"postingDate": {
                 u"$gte": self.end_date,
@@ -52,19 +62,18 @@ class CF:
             if u"registrants" not in challenge:
                 continue
 
-            if len(challenge[u"registrants"]) > num_registrants_gt:
-                yield challenge
+            yield challenge
 
-    def test(self, num_seeds, top_n=10):
-        Result = namedtuple("Result", ["name", "num_real", "accuracy"])
+    def test(self, seeds_selector, top_n=10):
+        start = time.time()
 
-        for challenge in self.test_set(num_registrants_gt=num_seeds):
+        for challenge in self.test_set():
             regs = challenge[u"registrants"]
             regs.sort(cmp=lambda x, y: cmp_datetime(x[u"registrationDate"],
                                                     y[u"registrationDate"]))
 
-            end = num_seeds if num_seeds >= 1 else int(len(regs) * num_seeds)
-            if end >= len(regs):
+            num_seeds = seeds_selector(challenge, regs)
+            if num_seeds >= len(regs):
                 continue
 
             predict = set()
@@ -72,7 +81,7 @@ class CF:
             real = set()
 
             newbie_index = len(self.users) + 10000
-            for reg in regs[end:]:
+            for reg in regs[num_seeds:]:
                 handle = reg[u"handle"].lower()
 
                 if handle in self.users:
@@ -83,7 +92,7 @@ class CF:
 
                 real.add(user_index)
 
-            for reg in regs[:end]:
+            for reg in regs[:num_seeds]:
                 handle = reg[u"handle"].lower()
 
                 # Not ever occurred in the training set.
@@ -126,6 +135,8 @@ class CF:
                 print "> Accuracy: %5.2f%% [#real: %2d]" % (
                     accuracy * 100, len(real)
                 )
+
+        self.time_costs.append(time.time() - start)
 
     def calc_similarity(self, user_index):
         if self.calculated[user_index] == 1:
@@ -176,34 +187,77 @@ class CF:
 
 
 def main():
+    start = time.time()
+
     cf = CF()
     cf.train()
 
-    args = (1, 2, 3, 4, 0.5,)
-    for num_seeds in args:
-        cf.test(num_seeds)
+    args = (1, 2, 4, 8, 0.5,)
+    for arg in args:
+        cf.test(lambda ch, regs: arg if arg >= 1 else int(len(regs) * arg))
         print ""
+
+    def register_in_the_first_hour(challenge, regs):
+        d0 = challenge[u"postingDate"]
+
+        for index, reg in enumerate(regs):
+            if (reg[u"registrationDate"] - d0).total_seconds() > 60 * 60:
+                return index + 1
+
+        return len(regs)
+
+    cf.test(register_in_the_first_hour)
+
+    # Output the result.
+
+    sio = StringIO()
+
+    stdout = sys.stdout
+    sys.stdout = sio
 
     print "#registrants,",
 
-    for num_seeds in args:
-        print "#seeds = %g," % num_seeds,
+    for arg in args:
+        print "#seeds = %g," % arg,
 
-    print ", name"
+    print "reg. in the first hour, name"
+
+    sums = [0] * len(cf.time_costs)
+    num_lines = 0
 
     for results in cf.results.values():
-        if len(results) < len(args):
+        if len(results) < len(cf.time_costs):
             continue
+
+        num_lines += 1
 
         if args[0] >= 1:
             print results[0].num_real + args[0], ',',
         else:
             print ",",
 
-        for result in results:
+        for i, result in enumerate(results):
+            sums[i] += result.accuracy
             print "%f," % result.accuracy,
 
         print ',', results[0].name
+
+    print ',',
+    for s in sums:
+        print s / num_lines, ',',
+
+    print '\n\n,',
+    for tc in cf.time_costs:
+        print tc, ',',
+
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+    with open("data/%s.csv" % ts, "w") as outf:
+        outf.write(datetime.now().isoformat() + '\n')
+        outf.write(sio.getvalue() + '\n')
+        outf.write("Time cost: %d seconds." % (time.time() - start))
+
+    stdout.write(sio.getvalue())
 
 
 if __name__ == "__main__":

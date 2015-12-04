@@ -144,8 +144,13 @@ class CF:
             return
 
         for i in range(self.sim.shape[0]):
-            inter = np.bitwise_and(self.m[user_index], self.m[i])
-            self.sim[user_index, i] = np.count_nonzero(inter)
+            if self.sim[user_index, i] > 0:
+                continue
+
+            intersection = np.bitwise_and(self.m[user_index], self.m[i])
+            nz = np.count_nonzero(intersection)
+            if nz > 0:
+                self.sim[user_index, i] = self.sim[i, user_index] = nz
 
         # sim(self, self) == 0
         self.sim[user_index, user_index] = 0

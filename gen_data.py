@@ -76,11 +76,20 @@ class CF:
             if num_seeds >= len(regs):
                 continue
 
-            predict = set()
-            checked = set()
-            real = set()
+            seeds = set()
 
+            for reg in regs[:num_seeds]:
+                handle = reg[u"handle"].lower()
+
+                # Not ever occurred in the training set.
+                if handle not in self.users:
+                    continue
+
+                seeds.add(self.users[handle])
+
+            real = set()
             newbie_index = len(self.users) + 10000
+
             for reg in regs[num_seeds:]:
                 handle = reg[u"handle"].lower()
 
@@ -92,16 +101,9 @@ class CF:
 
                 real.add(user_index)
 
-            for reg in regs[:num_seeds]:
-                handle = reg[u"handle"].lower()
+            predict = set()
 
-                # Not ever occurred in the training set.
-                if handle not in self.users:
-                    continue
-
-                user_index = self.users[handle]
-                checked.add(user_index)
-
+            for user_index in seeds:
                 self.calc_similarity(user_index)
 
                 indices = np.flatnonzero(self.sim[user_index])
@@ -114,7 +116,7 @@ class CF:
 
                 before = len(predict)
                 for t in a:
-                    if t[0] not in checked and t[0] not in predict:
+                    if t[0] not in seeds and t[0] not in predict:
                         predict.add(t[0])
 
                         if len(predict) - before == top_n:

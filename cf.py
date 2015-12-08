@@ -45,6 +45,9 @@ class CF:
             if u"registrants" not in challenge:
                 continue
 
+            if len(challenge[u"registrants"]) == 0:
+                continue
+
             yield challenge
 
     def test_set(self):
@@ -56,6 +59,9 @@ class CF:
 
         for challenge in self.db.challenges.find(condition):
             if u"registrants" not in challenge:
+                continue
+
+            if len(challenge[u"registrants"]) == 0:
                 continue
 
             yield challenge
@@ -100,7 +106,7 @@ class CF:
             predict = set()
 
             for user_index in seeds:
-                a = sim.cosine(self.m, user_index, top_n * 5)
+                a = sim.naive(self.m, user_index, top_n * 5)
 
                 before = len(predict)
                 for peer_index in a:
@@ -139,14 +145,20 @@ class CF:
 
         num_users = user_index
 
-        self.m = np.zeros((num_challenges, num_users), dtype=np.uint8)
+        self.m = np.zeros((num_challenges, num_users + 1), dtype=np.uint8)
 
         for challenge_index, challenge in enumerate(self.training_set()):
+            self.m[challenge_index, -1] = len(challenge[u"registrants"])
+
             for reg in challenge[u"registrants"]:
                 handle = reg[u"handle"].lower()
 
                 user_index = self.users[handle]
                 self.m[challenge_index, user_index] = 1
+
+        # 1 2 3    1 4 7
+        # 4 5 6 -> 2 5 8
+        # 7 8 9    3 6 9
 
         self.m = np.transpose(self.m)
 

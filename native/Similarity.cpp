@@ -55,7 +55,9 @@ class Row {
 public:
 
     Row(PyArrayObject *array, int ri)
-        : m_array(array), m_row(ri), m_col(0) {
+        : m_array(array), m_row(ri),
+          m_numCols(GetColumnCount(array)),
+          m_col(0) {
         
     }
 
@@ -66,12 +68,11 @@ public:
 
     // Get current (writable) element.
     ET &Current() {
-        ET *p = (ET *) PyArray_GETPTR2(m_array, m_row, m_col);
-        return *p;
+        return GetItem(m_col);
     }
 
     bool IsOk() {
-        return m_col < GetColumnCount(m_array);
+        return m_col < m_numCols;
     }
 
     void Next() {
@@ -82,10 +83,34 @@ public:
         m_col = 0;
     }
 
+    // Return the value right before the current one.
+    ET PeekBackward(int n = 1) {
+        if (m_col < n) {
+            return 0;
+        }
+
+        return GetItem(m_col - n);
+    }
+
+    // Return the value right after the current one.
+    ET PeekForward(int n = 1) {
+        if (m_col >= m_numCols - n) {
+            return 0;
+        }
+
+        return GetItem(m_col + n);
+    }
+
 private:
+
+    ET &GetItem(int col) {
+        ET *p = (ET *) PyArray_GETPTR2(m_array, m_row, col);
+        return *p;
+    }
 
     PyArrayObject *m_array;
     const int m_row;
+    const int m_numCols;
     int m_col;
 };
 
@@ -117,15 +142,19 @@ static PyObject *Calc(PyObject *self, PyObject *args, Functor func) {
 
 #endif
 
-    auto numRows = GetRowCount(m);
+    // The last row is the "nrow". (The number of registrants.)
+    auto numRows = GetRowCount(m) - 1;
+    Row<ET> nrow(m, numRows);
     Row<ET> xrow(m, userIndex);
 
-    typedef decltype(func(xrow, xrow)) SimValT;
+    typedef decltype(func(xrow, xrow, xrow)) SimValT;
     std::vector<Similarity<SimValT>> sim;
     sim.reserve(numRows);
 
     for (auto i = 0; i < numRows; i++) {
-        sim.push_back({ i, func(xrow, Row<ET>(m ,i)) });
+        sim.push_back({ i, func(xrow, Row<ET>(m ,i), nrow) });
+
+        nrow.Reset();
         xrow.Reset();
     }
 
@@ -166,7 +195,7 @@ static PyObject *Calc(PyObject *self, PyObject *args, Functor func) {
     return ret;
 }
 
-static int _Naive(Row<ET> &xrow, Row<ET> &yrow) {
+static int _Naive(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &) {
     auto difference = 0;
 
     while (xrow.IsOk()) {
@@ -183,7 +212,7 @@ static PyObject *naive(PyObject *self, PyObject *args) {
     return Calc(self, args, _Naive);
 }
 
-static double _Cosine(Row<ET> &xrow, Row<ET> &yrow) {
+static double _Cosine(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &) {
     double iproduct = 0.0;
     double x2 = 0.0;
     double y2 = 0.0;
@@ -207,9 +236,60 @@ static PyObject *cosine(PyObject *self, PyObject *args) {
     return Calc(self, args, _Cosine);
 }
 
+static double _Breese(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &nrow) {
+    double weight = 0.0;
+    auto x2 = 0;
+    auto y2 = 0;
+
+    while (xrow.IsOk()) {
+        ET xv = xrow.Current();
+        ET yv = yrow.Current();
+
+        assert(nrow.Current() > 0);
+
+        if (xv == yv && xv == 1) {
+            weight += 1 / log(1 + nrow.Current());
+        }
+
+        x2 += xv;
+        y2 += yv;
+
+        xrow.Next();
+        yrow.Next();
+        nrow.Next();
+    }
+
+    return weight / sqrt(x2 * y2);
+}
+
+static PyObject *Breese(PyObject *self, PyObject *args) {
+    return Calc(self, args, _Breese);
+}
+
+static double _neighbor(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &) {
+    double difference = 0.0;
+
+    while (xrow.IsOk()) {
+        difference += xrow.Current() & yrow.Current();
+        difference += (xrow.PeekBackward() & yrow.PeekBackward()) * 0.5;
+        difference += (xrow.PeekForward() & yrow.PeekForward()) * 0.5;
+
+        xrow.Next();
+        yrow.Next();
+    }
+
+    return difference;
+}
+
+static PyObject *neighbor(PyObject *self, PyObject *args) {
+    return Calc(self, args, _neighbor);
+}
+
 static PyMethodDef _Methods[] = {
     { "naive", naive, METH_VARARGS, nullptr },
     { "cosine", cosine, METH_VARARGS, nullptr },
+    { "Breese", Breese, METH_VARARGS, nullptr },
+    { "neighbor", neighbor, METH_VARARGS, nullptr },
     { "clear_cache", (PyCFunction) clear_cache, METH_NOARGS, nullptr },
     {  nullptr, nullptr, 0, nullptr }
 };

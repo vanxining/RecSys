@@ -106,7 +106,7 @@ class CF:
             predict = set()
 
             for user_index in seeds:
-                a = sim.naive(self.m, user_index, top_n * 5)
+                a = sim.Naive(self.m, user_index, top_n * 5)
 
                 before = len(predict)
                 for peer_index in a:
@@ -239,4 +239,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    sim.clear_cache()
+    sim.ClearCache()

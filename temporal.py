@@ -1,7 +1,8 @@
 
 from pymongo import MongoClient
 from datetime import datetime
-from cf import cmp_datetime
+
+from collab_filtering import cmp_datetime
 
 
 client = MongoClient()

@@ -29,7 +29,7 @@ bool operator < (const Similarity<T> &s1, const Similarity<T> &s2) {
 typedef std::unordered_map<int, PyObject *> Cache;
 static std::unordered_map<void *, Cache> gs_cacheMap;
 
-PyObject *clear_cache(PyObject *) {
+PyObject *ClearCache(PyObject *) {
     for (auto it = gs_cacheMap.begin(); it != gs_cacheMap.end(); ++it) {
         for (auto cit = it->second.begin(); cit != it->second.end(); ++cit) {
             Py_DECREF(cit->second);
@@ -196,19 +196,19 @@ static PyObject *Calc(PyObject *self, PyObject *args, Functor func) {
 }
 
 static int _Naive(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &) {
-    auto difference = 0;
+    auto similarity = 0;
 
     while (xrow.IsOk()) {
-        difference += xrow.Current() & yrow.Current();
+        similarity += xrow.Current() & yrow.Current();
 
         xrow.Next();
         yrow.Next();
     }
 
-    return difference;
+    return similarity;
 }
 
-static PyObject *naive(PyObject *self, PyObject *args) {
+static PyObject *Naive(PyObject *self, PyObject *args) {
     return Calc(self, args, _Naive);
 }
 
@@ -232,12 +232,12 @@ static double _Cosine(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &) {
     return iproduct / sqrt(x2 * y2);
 }
 
-static PyObject *cosine(PyObject *self, PyObject *args) {
+static PyObject *Cosine(PyObject *self, PyObject *args) {
     return Calc(self, args, _Cosine);
 }
 
 static double _Breese(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &nrow) {
-    double weight = 0.0;
+    double inverse = 0.0;
     auto x2 = 0;
     auto y2 = 0;
 
@@ -248,7 +248,7 @@ static double _Breese(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &nrow) {
         assert(nrow.Current() > 0);
 
         if (xv == yv && xv == 1) {
-            weight += 1 / log(1 + nrow.Current());
+            inverse += 1 / log(1 + nrow.Current());
         }
 
         x2 += xv;
@@ -259,38 +259,38 @@ static double _Breese(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &nrow) {
         nrow.Next();
     }
 
-    return weight / sqrt(x2 * y2);
+    return inverse / sqrt(x2 * y2);
 }
 
 static PyObject *Breese(PyObject *self, PyObject *args) {
     return Calc(self, args, _Breese);
 }
 
-static double _neighbor(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &) {
-    double difference = 0.0;
+static double _Neighbor(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &) {
+    double similarity = 0.0;
 
     while (xrow.IsOk()) {
-        difference += xrow.Current() & yrow.Current();
-        difference += (xrow.PeekBackward() & yrow.PeekBackward()) * 0.5;
-        difference += (xrow.PeekForward() & yrow.PeekForward()) * 0.5;
+        similarity += xrow.Current() & yrow.Current();
+        similarity += (xrow.PeekBackward() & yrow.PeekBackward()) * 0.5;
+        similarity += (xrow.PeekForward() & yrow.PeekForward()) * 0.5;
 
         xrow.Next();
         yrow.Next();
     }
 
-    return difference;
+    return similarity;
 }
 
-static PyObject *neighbor(PyObject *self, PyObject *args) {
-    return Calc(self, args, _neighbor);
+static PyObject *Neighbor(PyObject *self, PyObject *args) {
+    return Calc(self, args, _Neighbor);
 }
 
 static PyMethodDef _Methods[] = {
-    { "naive", naive, METH_VARARGS, nullptr },
-    { "cosine", cosine, METH_VARARGS, nullptr },
+    { "Naive", Naive, METH_VARARGS, nullptr },
+    { "Cosine", Cosine, METH_VARARGS, nullptr },
     { "Breese", Breese, METH_VARARGS, nullptr },
-    { "neighbor", neighbor, METH_VARARGS, nullptr },
-    { "clear_cache", (PyCFunction) clear_cache, METH_NOARGS, nullptr },
+    { "Neighbor", Neighbor, METH_VARARGS, nullptr },
+    { "ClearCache", (PyCFunction) ClearCache, METH_NOARGS, nullptr },
     {  nullptr, nullptr, 0, nullptr }
 };
 

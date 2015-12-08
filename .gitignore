@@ -1,4 +1,11 @@
 .idea
-*.pyc
 data
+premake
+
+*.pyc
+*.pyd
+*.exp
+*.lib
+*.pdb
+test.py
 Thumbs.db

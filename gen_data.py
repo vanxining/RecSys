@@ -6,10 +6,10 @@ from StringIO import StringIO
 from datetime import datetime
 
 from collections import namedtuple, defaultdict
-from datetime import datetime
 from pymongo import MongoClient
 
 import numpy as np
+import sim
 
 
 Result = namedtuple("Result", ["name", "num_real", "accuracy"])
@@ -25,16 +25,13 @@ class CF:
         self.db = self.client.topcoder
 
         self.users = {}
-
         self.m = None
-        self.sim = None
-        self.calculated = None
 
         self.time_costs = []
         self.results = defaultdict(list)
 
         self.year_from = 2014
-        self.end_date = datetime(2015, 10, 25)
+        self.end_date = datetime(2015, 11, 25)
 
     def training_set(self):
         condition = {
@@ -103,20 +100,12 @@ class CF:
             predict = set()
 
             for user_index in seeds:
-                self.calc_similarity(user_index)
-
-                indices = np.flatnonzero(self.sim[user_index])
-                a = [(int(i), int(self.sim[user_index, i])) for i in indices]
-
-                if len(a) == 0:
-                    continue
-
-                a.sort(cmp=lambda x, y: y[1] - x[1])
+                a = sim.cosine(self.m, user_index, top_n * 5)
 
                 before = len(predict)
-                for t in a:
-                    if t[0] not in seeds and t[0] not in predict:
-                        predict.add(t[0])
+                for peer_index in a:
+                    if peer_index not in seeds and peer_index not in predict:
+                        predict.add(peer_index)
 
                         if len(predict) - before == top_n:
                             break
@@ -124,38 +113,15 @@ class CF:
             if len(predict) > 0:
                 accuracy = len(real.intersection(predict)) / float(len(real))
 
-                result = Result(
-                    challenge["challengeName"],
-                    len(real),
-                    accuracy,
-                )
+                result = Result(challenge[u"challengeName"], len(real), accuracy)
+                self.results[challenge[u"challengeId"]].append(result)
 
-                self.results[challenge["challengeId"]].append(result)
-
-                print challenge["challengeName"]
+                print challenge[u"challengeName"]
                 print "> Accuracy: %5.2f%% [#real: %2d]" % (
                     accuracy * 100, len(real)
                 )
 
         self.time_costs.append(time.time() - start)
-
-    def calc_similarity(self, user_index):
-        if self.calculated[user_index] == 1:
-            return
-
-        for i in range(self.sim.shape[0]):
-            if self.sim[user_index, i] > 0:
-                continue
-
-            intersection = np.bitwise_and(self.m[user_index], self.m[i])
-            nz = np.count_nonzero(intersection)
-            if nz > 0:
-                self.sim[user_index, i] = self.sim[i, user_index] = nz
-
-        # sim(self, self) == 0
-        self.sim[user_index, user_index] = 0
-
-        self.calculated[user_index] = 1
 
     def train(self):
         num_challenges = 0
@@ -173,7 +139,7 @@ class CF:
 
         num_users = user_index
 
-        self.m = np.zeros((num_challenges, num_users), dtype=np.int8)
+        self.m = np.zeros((num_challenges, num_users), dtype=np.uint8)
 
         for challenge_index, challenge in enumerate(self.training_set()):
             for reg in challenge[u"registrants"]:
@@ -183,9 +149,6 @@ class CF:
                 self.m[challenge_index, user_index] = 1
 
         self.m = np.transpose(self.m)
-
-        self.sim = np.zeros((num_users, num_users), dtype=np.int8)
-        self.calculated = np.zeros(num_users, dtype=np.int8)
 
 
 def main():
@@ -264,3 +227,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    sim.clear_cache()

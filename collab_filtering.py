@@ -106,7 +106,7 @@ class CF:
             predict = set()
 
             for user_index in seeds:
-                a = sim.Naive(self.m, user_index, top_n * 5)
+                a = sim.Neighbor(self.m, user_index, top_n * 5)
 
                 before = len(predict)
                 for peer_index in a:
@@ -169,7 +169,7 @@ def main():
     cf = CF()
     cf.train()
 
-    args = (1, 2, 4, 8, 0.5,)
+    args = (1, 2,)
     for arg in args:
         cf.test(lambda ch, regs: arg if arg >= 1 else int(len(regs) * arg))
         print ""

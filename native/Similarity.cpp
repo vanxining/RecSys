@@ -270,9 +270,12 @@ static double _Neighbor(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &) {
     double similarity = 0.0;
 
     while (xrow.IsOk()) {
-        similarity += xrow.Current() & yrow.Current();
-        similarity += (xrow.PeekBackward() & yrow.PeekBackward()) * 0.5;
-        similarity += (xrow.PeekForward() & yrow.PeekForward()) * 0.5;
+        auto co_occurrence = xrow.Current() & yrow.Current();
+        if (co_occurrence) {
+            similarity += co_occurrence;
+
+            similarity += (yrow.PeekBackward() + yrow.PeekBackward()) * 0.75;
+        }
 
         xrow.Next();
         yrow.Next();
@@ -285,11 +288,35 @@ static PyObject *Neighbor(PyObject *self, PyObject *args) {
     return Calc(self, args, _Neighbor);
 }
 
+static double _Neighbor2(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &) {
+    double similarity = 0.0;
+
+    while (xrow.IsOk()) {
+        auto co_occurrence = xrow.Current() & yrow.Current();
+        if (co_occurrence) {
+            similarity += co_occurrence;
+
+            similarity += (yrow.PeekBackward(1) + yrow.PeekBackward(1)) * 0.75;
+            similarity += (yrow.PeekBackward(2) + yrow.PeekBackward(2)) * 0.5;
+        }
+
+        xrow.Next();
+        yrow.Next();
+    }
+
+    return similarity;
+}
+
+static PyObject *Neighbor2(PyObject *self, PyObject *args) {
+    return Calc(self, args, _Neighbor2);
+}
+
 static PyMethodDef _Methods[] = {
     { "Naive", Naive, METH_VARARGS, nullptr },
     { "Cosine", Cosine, METH_VARARGS, nullptr },
     { "Breese", Breese, METH_VARARGS, nullptr },
     { "Neighbor", Neighbor, METH_VARARGS, nullptr },
+    { "Neighbor2", Neighbor2, METH_VARARGS, nullptr },
     { "ClearCache", (PyCFunction) ClearCache, METH_NOARGS, nullptr },
     {  nullptr, nullptr, 0, nullptr }
 };

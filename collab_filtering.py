@@ -12,7 +12,7 @@ import numpy as np
 import sim
 
 
-Result = namedtuple("Result", ["name", "num_real", "accuracy"])
+Result = namedtuple("Result", ["name", "num_real", "recall"])
 
 
 def cmp_datetime(a, b):
@@ -117,15 +117,13 @@ class CF:
                             break
 
             if len(predict) > 0:
-                accuracy = len(real.intersection(predict)) / float(len(real))
+                recall = len(real.intersection(predict)) / float(len(real))
 
-                result = Result(challenge[u"challengeName"], len(real), accuracy)
+                result = Result(challenge[u"challengeName"], len(real), recall)
                 self.results[challenge[u"challengeId"]].append(result)
 
                 print challenge[u"challengeName"]
-                print "> Accuracy: %5.2f%% [#real: %2d]" % (
-                    accuracy * 100, len(real)
-                )
+                print "> Recall: %5.2f%% [#real: %2d]" % (recall * 100, len(real))
 
         self.time_costs.append(time.time() - start)
 
@@ -192,6 +190,7 @@ def main():
     stdout = sys.stdout
     sys.stdout = sio
 
+    print ""
     print "#registrants,",
 
     for arg in args:
@@ -214,8 +213,8 @@ def main():
             print ",",
 
         for i, result in enumerate(results):
-            sums[i] += result.accuracy
-            print "%f," % result.accuracy,
+            sums[i] += result.recall
+            print "%f," % result.recall,
 
         print ',', results[0].name
 

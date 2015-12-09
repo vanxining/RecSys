@@ -30,8 +30,19 @@ class CF:
         self.time_costs = []
         self.results = defaultdict(list)
 
-        self.year_from = 2014
+        self.year_from = 2015
         self.end_date = datetime(2015, 11, 25)
+
+    @staticmethod
+    def is_challenge_ok(challenge):
+        if u"registrants" not in challenge:
+            return False
+
+        if len(challenge[u"registrants"]) == 0:
+            return False
+
+        return (challenge[u"type"] == u"develop" and
+                challenge[u"challengeType"] == u"First2Finish")
 
     def training_set(self):
         condition = {
@@ -42,13 +53,8 @@ class CF:
         }
 
         for challenge in self.db.challenges.find(condition):
-            if u"registrants" not in challenge:
-                continue
-
-            if len(challenge[u"registrants"]) == 0:
-                continue
-
-            yield challenge
+            if CF.is_challenge_ok(challenge):
+                yield challenge
 
     def test_set(self):
         condition = {
@@ -58,13 +64,8 @@ class CF:
         }
 
         for challenge in self.db.challenges.find(condition):
-            if u"registrants" not in challenge:
-                continue
-
-            if len(challenge[u"registrants"]) == 0:
-                continue
-
-            yield challenge
+            if CF.is_challenge_ok(challenge):
+                yield challenge
 
     def test(self, seeds_selector, top_n=10):
         start = time.time()

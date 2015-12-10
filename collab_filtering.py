@@ -242,11 +242,14 @@ def main():
 
     with open("data/%s-%s.csv" % (ts, fn), "w") as outf:
         outf.write(datetime.now().isoformat() + '\n')
+        outf.write("Training set size: %d, " % cf.m.shape[1])
+        outf.write("Test set size: %d\n\n" % num_lines)
         outf.write(sio.getvalue() + '\n')
         outf.write("Time cost: %d seconds.\n\n" % (time.time() - start))
         outf.write(open("config/collab_filtering.ini").read())
 
     stdout.write(sio.getvalue())
+    stdout.write("\n\n")
 
 
 if __name__ == "__main__":

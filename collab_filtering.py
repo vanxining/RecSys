@@ -1,6 +1,7 @@
 
 import sys
 import time
+import ConfigParser
 
 from StringIO import StringIO
 from datetime import datetime
@@ -30,8 +31,17 @@ class CF:
         self.time_costs = []
         self.results = defaultdict(list)
 
-        self.year_from = 2015
-        self.end_date = datetime(2015, 11, 25)
+        self.config = ConfigParser.RawConfigParser()
+        self.config.read("config/collab_filtering.ini")
+
+        end_date = [
+            int(i) for i in self.config.get("default", "end_date").split('-')
+        ]
+
+        self.end_date = datetime(*end_date)
+        self.year_from = self.config.getint("default", "year_from")
+
+        self.sim_func = getattr(sim, self.config.get("default", "sim_func"))
 
     @staticmethod
     def is_challenge_ok(challenge):
@@ -107,7 +117,7 @@ class CF:
             predict = set()
 
             for user_index in seeds:
-                a = sim.Neighbor(self.m, user_index, top_n * 5)
+                a = self.sim_func(self.m, user_index, top_n * 5)
 
                 before = len(predict)
                 for peer_index in a:
@@ -228,11 +238,13 @@ def main():
         print tc, ',',
 
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    fn = cf.config.get("default", "sim_func")
 
-    with open("data/%s.csv" % ts, "w") as outf:
+    with open("data/%s-%s.csv" % (ts, fn), "w") as outf:
         outf.write(datetime.now().isoformat() + '\n')
         outf.write(sio.getvalue() + '\n')
-        outf.write("Time cost: %d seconds." % (time.time() - start))
+        outf.write("Time cost: %d seconds.\n\n" % (time.time() - start))
+        outf.write(open("config/collab_filtering.ini").read())
 
     stdout.write(sio.getvalue())
 

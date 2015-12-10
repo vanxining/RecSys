@@ -7,5 +7,6 @@ premake
 *.exp
 *.lib
 *.pdb
+*.ini
 test.py
 Thumbs.db

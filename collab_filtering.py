@@ -41,8 +41,8 @@ class CF:
         if len(challenge[u"registrants"]) == 0:
             return False
 
-        return (challenge[u"type"] == u"develop" and
-                challenge[u"challengeType"] == u"First2Finish")
+        return (challenge[u"challengeType"] == u"First2Finish" and
+                challenge[u"type"] == u"develop")
 
     def training_set(self):
         condition = {

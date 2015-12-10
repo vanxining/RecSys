@@ -22,23 +22,29 @@ bool operator < (const Similarity<T> &s1, const Similarity<T> &s2) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define USE_CACHE
+#define ENABLE_CACHE 1
 
-#ifdef USE_CACHE
+#if ENABLE_CACHE
 
 typedef std::unordered_map<int, PyObject *> Cache;
 static std::unordered_map<void *, Cache> gs_cacheMap;
 
+#endif
+
 PyObject *ClearCache(PyObject *) {
+
+#if ENABLE_CACHE
+
     for (auto it = gs_cacheMap.begin(); it != gs_cacheMap.end(); ++it) {
         for (auto cit = it->second.begin(); cit != it->second.end(); ++cit) {
             Py_DECREF(cit->second);
         }
     }
 
+#endif
+
     Py_RETURN_NONE;
 }
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -129,7 +135,7 @@ static PyObject *Calc(PyObject *self, PyObject *args, Functor func) {
         return nullptr;
     }
 
-#ifdef USE_CACHE
+#if ENABLE_CACHE
 
     auto it = gs_cacheMap.find(func);
     if (it != gs_cacheMap.end()) {
@@ -185,7 +191,7 @@ static PyObject *Calc(PyObject *self, PyObject *args, Functor func) {
         _PyTuple_Resize(&ret, i);
     }
 
-#ifdef USE_CACHE
+#if ENABLE_CACHE
 
     Py_INCREF(ret);
     gs_cacheMap[func][userIndex] = ret;
@@ -322,6 +328,7 @@ static PyMethodDef _Methods[] = {
 };
 
 #if PY_VERSION_HEX >= 0x03000000
+
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
    "sim",

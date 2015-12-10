@@ -178,7 +178,7 @@ def main():
     cf = CF()
     cf.train()
 
-    args = (1, 2,)
+    args = (1, 2, 4, 8, 0.5,)
     for arg in args:
         cf.test(lambda ch, regs: arg if arg >= 1 else int(len(regs) * arg))
         print ""
@@ -237,6 +237,9 @@ def main():
     for tc in cf.time_costs:
         print tc, ',',
 
+    print "\nTime cost: %d seconds.\n\n" % (time.time() - start)
+    print open("config/collab_filtering.ini").read()
+
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     fn = cf.config.get("default", "sim_func")
 
@@ -244,12 +247,9 @@ def main():
         outf.write(datetime.now().isoformat() + '\n')
         outf.write("Training set size: %d, " % cf.m.shape[1])
         outf.write("Test set size: %d\n\n" % num_lines)
-        outf.write(sio.getvalue() + '\n')
-        outf.write("Time cost: %d seconds.\n\n" % (time.time() - start))
-        outf.write(open("config/collab_filtering.ini").read())
+        outf.write(sio.getvalue())
 
     stdout.write(sio.getvalue())
-    stdout.write("\n\n")
 
 
 if __name__ == "__main__":

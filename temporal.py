@@ -1,31 +1,28 @@
 
-from pymongo import MongoClient
-from datetime import datetime
+import pymongo
 
+from datetime import datetime
 from collab_filtering import cmp_datetime
 
 
-client = MongoClient()
+client = pymongo.MongoClient()
 db = client.topcoder
 
 
 def census(date_from, minute):
+    num_ratios = 0
+    ratio_sum = 0.0
+    regs_sum = 0
+
     condition = {
         u"postingDate": {
             u"$gte": date_from,
         }
     }
 
-    num_ratios = 0
-    ratio_sum = 0.0
-    regs_sum = 0
-
     for challenge in db.challenges.find(condition):
         if u"registrants" not in challenge:
             continue
-
-        d0 = challenge[u"postingDate"]
-        count = 0
 
         regs = challenge[u"registrants"]
         if len(regs) == 0:
@@ -33,6 +30,9 @@ def census(date_from, minute):
 
         regs.sort(cmp=lambda x, y: cmp_datetime(x[u"registrationDate"],
                                                 y[u"registrationDate"]))
+
+        d0 = challenge[u"postingDate"]
+        count = 0
 
         for reg in regs:
             delta = (reg[u"registrationDate"] - d0).total_seconds()
@@ -48,6 +48,19 @@ def census(date_from, minute):
         return ratio_sum / num_ratios, int(round(regs_sum / num_ratios))
     else:
         return 0.0, 0
+
+
+def print_all_dates(date_from):
+    condition = {
+        u"postingDate": {
+            u"$gte": date_from,
+        }
+    }
+
+    sorter = (u"postingDate", pymongo.DESCENDING)
+
+    for challenge in db.challenges.find(condition).sort(*sorter):
+        print challenge[u"postingDate"]
 
 
 def main():

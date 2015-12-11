@@ -39,5 +39,4 @@ def census(date_from):
 
 
 if __name__ == "__main__":
-    date_from = datetime(2015, 1, 1)
-    census(date_from)
+    census(datetime(2015, 1, 1))

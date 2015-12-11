@@ -5,10 +5,9 @@ import ConfigParser
 
 from StringIO import StringIO
 from datetime import datetime
-
 from collections import namedtuple, defaultdict
-from pymongo import MongoClient
 
+import pymongo
 import numpy as np
 import sim
 
@@ -22,7 +21,7 @@ def cmp_datetime(a, b):
 
 class CF:
     def __init__(self):
-        self.client = MongoClient()
+        self.client = pymongo.MongoClient()
         self.db = self.client.topcoder
 
         self.users = {}
@@ -62,7 +61,9 @@ class CF:
             }
         }
 
-        for challenge in self.db.challenges.find(condition):
+        sorter = (u"postingDate", pymongo.DESCENDING)
+
+        for challenge in self.db.challenges.find(condition).sort(*sorter):
             if CF.is_challenge_ok(challenge):
                 yield challenge
 

@@ -31,20 +31,7 @@ static std::unordered_map<void *, Cache> gs_cacheMap;
 
 #endif
 
-PyObject *ClearCache(PyObject *) {
-
-#if ENABLE_CACHE
-
-    for (auto it = gs_cacheMap.begin(); it != gs_cacheMap.end(); ++it) {
-        for (auto cit = it->second.begin(); cit != it->second.end(); ++cit) {
-            Py_DECREF(cit->second);
-        }
-    }
-
-#endif
-
-    Py_RETURN_NONE;
-}
+PyObject *ClearCache(PyObject *);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -56,6 +43,8 @@ inline int GetColumnCount(PyArrayObject *array) {
     return PyArray_DIM(array, 1);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template<typename ET>
 class Row {
 public:
@@ -65,6 +54,16 @@ public:
           m_numCols(GetColumnCount(array)),
           m_col(0) {
         
+    }
+
+    // Get the internal NumPy array object.
+    PyArrayObject *GetArray() const {
+        return m_array;
+    }
+
+    // Get row index.
+    int GetRowIndex() const {
+        return m_row;
     }
 
     // Get current element value.
@@ -119,6 +118,60 @@ private:
     const int m_numCols;
     int m_col;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct RowsNonZeroCache {
+    PyArrayObject *m = nullptr;
+    std::vector<int16_t> rows;
+    int maxCount = 0;
+};
+
+static RowsNonZeroCache gs_nzCache;
+
+void CountRowsNonZero(PyArrayObject *m) {
+    auto numRows = GetRowCount(m) - 1;
+
+    gs_nzCache.m = m;
+    gs_nzCache.rows.clear();
+    gs_nzCache.rows.resize(numRows);
+
+    for (auto i = 0; i < numRows; i++) {
+        Row<ET> row(m, i);
+        auto nz = 0;
+
+        while (row.IsOk()) {
+            nz += row.Current();
+            row.Next();
+        }
+
+        if (gs_nzCache.maxCount < nz) {
+            gs_nzCache.maxCount = nz;
+        }
+
+        gs_nzCache.rows[i] = nz;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PyObject *ClearCache(PyObject *) {
+    gs_nzCache.m = nullptr;
+    gs_nzCache.rows.clear();
+    gs_nzCache.maxCount = 0;
+
+#if ENABLE_CACHE
+
+    for (auto it = gs_cacheMap.begin(); it != gs_cacheMap.end(); ++it) {
+        for (auto cit = it->second.begin(); cit != it->second.end(); ++cit) {
+            Py_DECREF(cit->second);
+        }
+    }
+
+#endif
+
+    Py_RETURN_NONE;
+}
 
 template <typename Functor>
 static PyObject *Calc(PyObject *self, PyObject *args, Functor func) {
@@ -317,12 +370,31 @@ static PyObject *Neighbor2(PyObject *self, PyObject *args) {
     return Calc(self, args, _Neighbor2);
 }
 
+static double _NeighborGlobal(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &nrow) {
+    auto similarity = _Neighbor(xrow, yrow, nrow);
+
+    auto m = yrow.GetArray();
+    if (gs_nzCache.m != m) {
+        CountRowsNonZero(m);
+    }
+
+    double nzCount = gs_nzCache.rows[yrow.GetRowIndex()];
+    double maxCount = gs_nzCache.maxCount;
+
+    return similarity * (nzCount / maxCount) * 0.5;
+}
+
+static PyObject *NeighborGlobal(PyObject *self, PyObject *args) {
+    return Calc(self, args, _NeighborGlobal);
+}
+
 static PyMethodDef _Methods[] = {
     { "Naive", Naive, METH_VARARGS, nullptr },
     { "Cosine", Cosine, METH_VARARGS, nullptr },
     { "Breese", Breese, METH_VARARGS, nullptr },
     { "Neighbor", Neighbor, METH_VARARGS, nullptr },
     { "Neighbor2", Neighbor2, METH_VARARGS, nullptr },
+    { "NeighborGlobal", NeighborGlobal, METH_VARARGS, nullptr },
     { "ClearCache", (PyCFunction) ClearCache, METH_NOARGS, nullptr },
     {  nullptr, nullptr, 0, nullptr }
 };

@@ -13,6 +13,7 @@ import sim
 
 
 Result = namedtuple("Result", ("name", "num_real", "accuracy", "recall"))
+TestRound = namedtuple("TestRound", ("time", "diversity"))
 
 
 def cmp_datetime(a, b):
@@ -27,8 +28,9 @@ class CF:
         self.users = {}
         self.m = None
 
-        self.time_costs = []
+        self.test_rounds = []
         self.results = defaultdict(list)
+        self.predicted_ever = set()
 
         self.config = ConfigParser.RawConfigParser()
         self.config.read("config/collab_filtering.ini")
@@ -41,6 +43,9 @@ class CF:
         self.year_from = self.config.getint("default", "year_from")
 
         self.sim_func = getattr(sim, self.config.get("default", "sim_func"))
+
+    def diversity(self):
+        return len(self.predicted_ever) / float(self.m.shape[0] - 1)
 
     @staticmethod
     def is_challenge_ok(challenge):
@@ -80,6 +85,7 @@ class CF:
 
     def test(self, seeds_selector, top_n=10):
         start = time.time()
+        self.predicted_ever.clear()
 
         for challenge in self.test_set():
             regs = challenge[u"registrants"]
@@ -129,6 +135,8 @@ class CF:
                             break
 
             if len(predict) > 0:
+                self.predicted_ever |= predict
+
                 intersection = real.intersection(predict)
                 accuracy = len(intersection) / float(len(predict))
                 recall = len(intersection) / float(len(real))
@@ -144,7 +152,8 @@ class CF:
                 print "> Accuracy: %5.2f%%" % (accuracy * 100)
                 print "> Recall: %5.2f%% [#real: %2d]" % (recall * 100, len(real))
 
-        self.time_costs.append(time.time() - start)
+        test_round = TestRound(time.time() - start, self.diversity())
+        self.test_rounds.append(test_round)
 
     def train(self):
         num_challenges = 0
@@ -186,7 +195,7 @@ def main():
     cf = CF()
     cf.train()
 
-    args = (1,)
+    args = (1, 2, 4, 8, 0.5,)
     for arg in args:
         cf.test(lambda ch, regs: arg if arg >= 1 else int(len(regs) * arg))
         print ""
@@ -217,12 +226,12 @@ def main():
 
     print "reg. in the first hour,,, name"
 
-    accuracy_sums = [0.0] * len(cf.time_costs)
+    accuracy_sums = [0.0] * len(cf.test_rounds)
     recall_sums = list(accuracy_sums)
     num_lines = 0
 
     for results in cf.results.values():
-        if len(results) < len(cf.time_costs):
+        if len(results) < len(cf.test_rounds):
             continue
 
         num_lines += 1
@@ -244,9 +253,13 @@ def main():
     for accuracy, recall in zip(accuracy_sums, recall_sums):
         print "%f,%f,," % (accuracy / num_lines, recall / num_lines),
 
+    print '\n  ,,',
+    for test_round in cf.test_rounds:
+        print test_round.diversity, ',,,',
+
     print '\n\n  ,,',
-    for tc in cf.time_costs:
-        print tc, ',,,',
+    for test_round in cf.test_rounds:
+        print test_round.time, ',,,',
 
     print "\n\nTotal time cost: %.2f seconds.\n\n" % (time.time() - start)
     print open("config/collab_filtering.ini").read()

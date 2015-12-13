@@ -12,7 +12,7 @@ import numpy as np
 import sim
 
 
-Result = namedtuple("Result", ["name", "num_real", "recall"])
+Result = namedtuple("Result", ("name", "num_real", "accuracy", "recall"))
 
 
 def cmp_datetime(a, b):
@@ -129,12 +129,19 @@ class CF:
                             break
 
             if len(predict) > 0:
-                recall = len(real.intersection(predict)) / float(len(real))
+                intersection = real.intersection(predict)
+                accuracy = len(intersection) / float(len(predict))
+                recall = len(intersection) / float(len(real))
 
-                result = Result(challenge[u"challengeName"], len(real), recall)
+                result = Result(challenge[u"challengeName"],
+                                len(real),
+                                accuracy,
+                                recall)
+
                 self.results[challenge[u"challengeId"]].append(result)
 
                 print challenge[u"challengeName"]
+                print "> Accuracy: %5.2f%%" % (accuracy * 100)
                 print "> Recall: %5.2f%% [#real: %2d]" % (recall * 100, len(real))
 
         self.time_costs.append(time.time() - start)
@@ -179,7 +186,7 @@ def main():
     cf = CF()
     cf.train()
 
-    args = (1, 2, 4, 8, 0.5,)
+    args = (1,)
     for arg in args:
         cf.test(lambda ch, regs: arg if arg >= 1 else int(len(regs) * arg))
         print ""
@@ -203,14 +210,15 @@ def main():
     sys.stdout = sio
 
     print ""
-    print "#registrants,",
+    print "#registrants,,",
 
     for arg in args:
-        print "#seeds = %g," % arg,
+        print "#seeds = %g,,," % arg,
 
-    print "reg. in the first hour, name"
+    print "reg. in the first hour,,, name"
 
-    sums = [0] * len(cf.time_costs)
+    accuracy_sums = [0.0] * len(cf.time_costs)
+    recall_sums = list(accuracy_sums)
     num_lines = 0
 
     for results in cf.results.values():
@@ -220,25 +228,27 @@ def main():
         num_lines += 1
 
         if args[0] >= 1:
-            print results[0].num_real + args[0], ',',
+            print "%2d,," % (results[0].num_real + args[0]),
         else:
-            print ",",
+            print ",,",
 
         for i, result in enumerate(results):
-            sums[i] += result.recall
-            print "%f," % result.recall,
+            accuracy_sums[i] += result.accuracy
+            recall_sums[i] += result.recall
 
-        print ',', results[0].name
+            print "%f,%f,," % (result.accuracy, result.recall),
 
-    print ',',
-    for s in sums:
-        print s / num_lines, ',',
+        print results[0].name
 
-    print '\n\n,',
+    print "  ,,",
+    for accuracy, recall in zip(accuracy_sums, recall_sums):
+        print "%f,%f,," % (accuracy / num_lines, recall / num_lines),
+
+    print '\n\n  ,,',
     for tc in cf.time_costs:
-        print tc, ',',
+        print tc, ',,,',
 
-    print "\nTime cost: %d seconds.\n\n" % (time.time() - start)
+    print "\n\nTotal time cost: %.2f seconds.\n\n" % (time.time() - start)
     print open("config/collab_filtering.ini").read()
 
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")

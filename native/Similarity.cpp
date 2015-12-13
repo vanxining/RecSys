@@ -373,9 +373,8 @@ static PyObject *Neighbor2(PyObject *self, PyObject *args) {
 static double _NeighborGlobal(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &nrow) {
     auto similarity = _Neighbor(xrow, yrow, nrow);
 
-    auto m = yrow.GetArray();
-    if (gs_nzCache.m != m) {
-        CountRowsNonZero(m);
+    if (gs_nzCache.m != yrow.GetArray()) {
+        CountRowsNonZero(yrow.GetArray());
     }
 
     double nzCount = gs_nzCache.rows[yrow.GetRowIndex()];
@@ -388,6 +387,18 @@ static PyObject *NeighborGlobal(PyObject *self, PyObject *args) {
     return Calc(self, args, _NeighborGlobal);
 }
 
+static int _Active(Row<ET> &, Row<ET> &yrow, Row<ET> &) {
+    if (gs_nzCache.m != yrow.GetArray()) {
+        CountRowsNonZero(yrow.GetArray());
+    }
+
+    return gs_nzCache.rows[yrow.GetRowIndex()];
+}
+
+static PyObject *Active(PyObject *self, PyObject *args) {
+    return Calc(self, args, _Active);
+}
+
 static PyMethodDef _Methods[] = {
     { "Naive", Naive, METH_VARARGS, nullptr },
     { "Cosine", Cosine, METH_VARARGS, nullptr },
@@ -395,6 +406,7 @@ static PyMethodDef _Methods[] = {
     { "Neighbor", Neighbor, METH_VARARGS, nullptr },
     { "Neighbor2", Neighbor2, METH_VARARGS, nullptr },
     { "NeighborGlobal", NeighborGlobal, METH_VARARGS, nullptr },
+    { "Active", Active, METH_VARARGS, nullptr },
     { "ClearCache", (PyCFunction) ClearCache, METH_NOARGS, nullptr },
     {  nullptr, nullptr, 0, nullptr }
 };

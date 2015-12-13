@@ -121,24 +121,24 @@ class CF:
 
                 real.add(user_index)
 
-            predict = set()
+            predicted = set()
 
             for user_index in seeds:
                 a = self.sim_func(self.m, user_index, top_n * 5)
 
-                before = len(predict)
+                before = len(predicted)
                 for peer_index in a:
-                    if peer_index not in seeds and peer_index not in predict:
-                        predict.add(peer_index)
+                    if peer_index not in seeds and peer_index not in predicted:
+                        predicted.add(peer_index)
 
-                        if len(predict) - before == top_n:
+                        if len(predicted) - before == top_n:
                             break
 
-            if len(predict) > 0:
-                self.predicted_ever |= predict
+            if len(predicted) > 0:
+                self.predicted_ever |= predicted
 
-                intersection = real.intersection(predict)
-                accuracy = len(intersection) / float(len(predict))
+                intersection = real.intersection(predicted)
+                accuracy = len(intersection) / float(len(predicted))
                 recall = len(intersection) / float(len(real))
 
                 result = Result(challenge[u"challengeName"],

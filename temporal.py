@@ -45,9 +45,9 @@ def census(date_from, minute):
         regs_sum += count
 
     if num_ratios > 0:
-        return ratio_sum / num_ratios, int(round(regs_sum / num_ratios))
+        return ratio_sum / num_ratios, float(regs_sum) / num_ratios
     else:
-        return 0.0, 0
+        return 0.0, 0.0
 
 
 def print_all_dates(date_from):
@@ -73,24 +73,24 @@ def main():
     # 4096 minutes = 2.85 days
     # 8192 minutes = 5.69 days
 
-    # 1 minutes: 0.72% - 0
-    # 2 minutes: 0.84% - 0
-    # 4 minutes: 1.20% - 0
-    # 8 minutes: 1.98% - 0
-    # 16 minutes: 3.48% - 0
-    # 32 minutes: 6.00% - 0
-    # 64 minutes: 10.21% - 1
-    # 128 minutes: 17.29% - 2
-    # 256 minutes: 26.90% - 4
-    # 512 minutes: 40.07% - 7
-    # 1024 minutes: 57.74% - 10
-    # 2048 minutes: 75.16% - 14
-    # 4096 minutes: 89.52% - 18
-    # 8192 minutes: 96.42% - 20
+    # 1 minutes: 0.70% - 0.1
+    # 2 minutes: 0.83% - 0.1
+    # 4 minutes: 1.20% - 0.2
+    # 8 minutes: 1.95% - 0.3
+    # 16 minutes: 3.43% - 0.5
+    # 32 minutes: 5.97% - 0.9
+    # 64 minutes: 10.13% - 1.7
+    # 128 minutes: 17.06% - 3.0
+    # 256 minutes: 26.60% - 4.8
+    # 512 minutes: 39.72% - 7.5
+    # 1024 minutes: 57.48% - 11.3
+    # 2048 minutes: 74.96% - 15.5
+    # 4096 minutes: 89.30% - 19.3
+    # 8192 minutes: 96.29% - 21.7
 
     while coverage < 0.9:
         coverage, regs_mean = census(date_from, minute)
-        print "%d minutes: %.2f%% - %d" % (minute, coverage * 100, regs_mean)
+        print "%d minutes: %.2f%% - %.1f" % (minute, coverage * 100, regs_mean)
 
         minute *= 2
 

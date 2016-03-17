@@ -20,6 +20,25 @@ def cmp_datetime(a, b):
     return -1 if a < b else 1 if a > b else 0
 
 
+class Config:
+    def __init__(self):
+        config = ConfigParser.RawConfigParser()
+        config.read("config/collab_filtering.ini")
+
+        nb_seeds = config.get("default", "nb_seeds").split(',')
+        self.nb_seeds = [int(n) if '.' not in n else float(n) for n in nb_seeds]
+
+        self.year_from = config.getint("default", "year_from")
+
+        end_date = config.get("default", "end_date").split('-')
+        self.end_date = datetime(*[int(i) for i in end_date])
+
+        self.sim_func = config.get("default", "sim_func")
+
+
+g_config = Config()
+
+
 class CF:
     def __init__(self):
         self.client = pymongo.MongoClient()
@@ -31,19 +50,6 @@ class CF:
         self.test_rounds = []
         self.results = defaultdict(list)
         self.predicted_ever = set()
-
-        self.config = ConfigParser.RawConfigParser()
-        self.config.read("config/collab_filtering.ini")
-
-        nb_seeds = self.config.get("default", "nb_seeds").split(',')
-        self.nb_seeds = [int(n) if '.' not in n else float(n) for n in nb_seeds]
-
-        self.year_from = self.config.getint("default", "year_from")
-
-        end_date = self.config.get("default", "end_date").split('-')
-        self.end_date = datetime(*[int(i) for i in end_date])
-
-        self.sim_func = getattr(sim, self.config.get("default", "sim_func"))
 
     def diversity(self):
         return len(self.predicted_ever) / float(self.m.shape[0] - 1)
@@ -63,8 +69,8 @@ class CF:
     def training_set(self):
         condition = {
             u"postingDate": {
-                u"$gte": datetime(self.year_from, 1, 1),
-                u"$lt": self.end_date,
+                u"$gte": datetime(g_config.year_from, 1, 1),
+                u"$lt": g_config.end_date,
             }
         }
 
@@ -77,7 +83,7 @@ class CF:
     def test_set(self):
         condition = {
             u"postingDate": {
-                u"$gte": self.end_date,
+                u"$gte": g_config.end_date,
             }
         }
 
@@ -86,6 +92,8 @@ class CF:
                 yield challenge
 
     def test(self, seeds_selector, top_n=10):
+        sim_func = getattr(sim, g_config.sim_func)
+
         start = time.time()
         self.predicted_ever.clear()
 
@@ -130,7 +138,7 @@ class CF:
             predicted = set()
 
             for user_index in seeds:
-                a = self.sim_func(self.m, user_index, top_n * 5)
+                a = sim_func(self.m, user_index, top_n * 5)
 
                 before = len(predicted)
                 for peer_index in a:
@@ -210,7 +218,7 @@ def main():
     cf = CF()
     cf.train()
 
-    for nb in cf.nb_seeds:
+    for nb in g_config.nb_seeds:
         cf.test(lambda ch, regs: nb if nb >= 1 else int(len(regs) * nb))
         print ""
 
@@ -235,7 +243,7 @@ def main():
     print ""
     print "#registrants,,",
 
-    for nb in cf.nb_seeds:
+    for nb in g_config.nb_seeds:
         print "#seeds = %g,,," % nb,
 
     print "reg. in the first hour,,, name"
@@ -251,8 +259,8 @@ def main():
 
         num_lines += 1
 
-        if cf.nb_seeds[0] >= 1:
-            print "%2d,," % (results[0].num_real + cf.nb_seeds[0]),
+        if g_config.nb_seeds[0] >= 1:
+            print "%2d,," % (results[0].num_real + g_config.nb_seeds[0]),
         else:
             print ",,",
 
@@ -286,9 +294,7 @@ def main():
     print open("config/collab_filtering.ini").read()
 
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    fn = cf.config.get("default", "sim_func")
-
-    with open("data/%s-%s.csv" % (ts, fn), "w") as outf:
+    with open("data/%s-%s.csv" % (ts, g_config.sim_func), "w") as outf:
         outf.write(datetime.now().isoformat() + '\n')
         outf.write("Training set size: %d, " % cf.m.shape[1])
         outf.write("Test set size: %d\n\n" % num_lines)

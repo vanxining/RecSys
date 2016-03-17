@@ -253,15 +253,21 @@ def main():
     for accuracy, recall in zip(accuracy_sums, recall_sums):
         print "%f,%f,," % (accuracy / num_lines, recall / num_lines),
 
-    print "\n  ,,",
+    print "Average (Accuracy & Recall rate)"
+
+    print "  ,,",
     for test_round in cf.test_rounds:
         print test_round.diversity, ",,,",
 
-    print "\n\n  ,,",
+    print "Average (Diversity)\n"
+
+    print "  ,,",
     for test_round in cf.test_rounds:
         print test_round.time, ",,,",
 
-    print "\n\nTotal time cost: %.2f seconds.\n\n" % (time.time() - start)
+    print "Time\n"
+
+    print "Total time cost: %.2f seconds.\n\n" % (time.time() - start)
     print open("config/collab_filtering.ini").read()
 
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")

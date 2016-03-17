@@ -35,12 +35,13 @@ class CF:
         self.config = ConfigParser.RawConfigParser()
         self.config.read("config/collab_filtering.ini")
 
-        end_date = [
-            int(i) for i in self.config.get("default", "end_date").split('-')
-        ]
+        nb_seeds = self.config.get("default", "nb_seeds").split(',')
+        self.nb_seeds = [int(n) if '.' not in n else float(n) for n in nb_seeds]
 
-        self.end_date = datetime(*end_date)
         self.year_from = self.config.getint("default", "year_from")
+
+        end_date = self.config.get("default", "end_date").split('-')
+        self.end_date = datetime(*[int(i) for i in end_date])
 
         self.sim_func = getattr(sim, self.config.get("default", "sim_func"))
 
@@ -209,9 +210,8 @@ def main():
     cf = CF()
     cf.train()
 
-    args = (1, 2, 4, 8, 0.5,)
-    for arg in args:
-        cf.test(lambda ch, regs: arg if arg >= 1 else int(len(regs) * arg))
+    for nb in cf.nb_seeds:
+        cf.test(lambda ch, regs: nb if nb >= 1 else int(len(regs) * nb))
         print ""
 
     def register_in_the_first_hour(challenge, regs):
@@ -235,8 +235,8 @@ def main():
     print ""
     print "#registrants,,",
 
-    for arg in args:
-        print "#seeds = %g,,," % arg,
+    for nb in cf.nb_seeds:
+        print "#seeds = %g,,," % nb,
 
     print "reg. in the first hour,,, name"
 
@@ -251,8 +251,8 @@ def main():
 
         num_lines += 1
 
-        if args[0] >= 1:
-            print "%2d,," % (results[0].num_real + args[0]),
+        if cf.nb_seeds[0] >= 1:
+            print "%2d,," % (results[0].num_real + cf.nb_seeds[0]),
         else:
             print ",,",
 

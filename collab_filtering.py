@@ -13,7 +13,7 @@ import sim
 
 
 Result = namedtuple("Result", ("name", "num_real", "accuracy", "recall"))
-TestRound = namedtuple("TestRound", ("time", "diversity"))
+TestRound = namedtuple("TestRound", ("time", "accuracy", "recall", "diversity"))
 
 
 def cmp_datetime(a, b):
@@ -55,6 +55,7 @@ class CF:
         if len(challenge[u"registrants"]) == 0:
             return False
 
+        # TODO: challengeType
         return (challenge[u"challengeType"] == u"First2Finish" and
                 challenge[u"type"] == u"develop")
 
@@ -87,6 +88,10 @@ class CF:
         start = time.time()
         self.predicted_ever.clear()
 
+        nb_processed = 0
+        accuracy_sum = 0
+        recall_sum = 0
+
         for challenge in self.test_set():
             regs = challenge[u"registrants"]
             regs.sort(cmp=lambda x, y: cmp_datetime(x[u"registrationDate"],
@@ -115,7 +120,7 @@ class CF:
 
                 if handle in self.users:
                     user_index = self.users[handle]
-                else:
+                else:  # TODO: Why do so? We can never find them out.
                     user_index = newbie_index
                     newbie_index += 1
 
@@ -148,12 +153,21 @@ class CF:
 
                 self.results[challenge[u"challengeId"]].append(result)
 
+                nb_processed += 1
+                accuracy_sum += accuracy
+                recall_sum += recall
+
                 print challenge[u"challengeName"]
                 print "> Accuracy: %5.2f%%" % (accuracy * 100)
                 print "> Recall: %5.2f%% [#real: %2d]" % (recall * 100, len(real))
 
-        test_round = TestRound(time.time() - start, self.diversity())
+        test_round = TestRound(time.time() - start,
+                               accuracy_sum / float(nb_processed),
+                               recall_sum / float(nb_processed),
+                               self.diversity())
         self.test_rounds.append(test_round)
+
+        print test_round
 
     def train(self):
         num_challenges = 0
@@ -231,6 +245,7 @@ def main():
     num_lines = 0
 
     for results in cf.results.values():
+        # Filter out challenges that do not have enough registrants.
         if len(results) < len(cf.test_rounds):
             continue
 

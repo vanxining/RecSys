@@ -218,20 +218,7 @@ def main():
     cf = CF()
     cf.train()
 
-    for nb in g_config.nb_seeds:
-        cf.test(lambda ch, regs: nb if nb >= 1 else int(len(regs) * nb))
-        print ""
-
-    def register_in_the_first_hour(challenge, regs):
-        d0 = challenge[u"postingDate"]
-
-        for index, reg in enumerate(regs):
-            if (reg[u"registrationDate"] - d0).total_seconds() > 60 * 60:
-                return index + 1
-
-        return len(regs)
-
-    cf.test(register_in_the_first_hour)
+    run_all_tests(cf)
 
     # Output the result.
 
@@ -301,6 +288,23 @@ def main():
         outf.write(sio.getvalue())
 
     stdout.write(sio.getvalue())
+
+
+def run_all_tests(cf):
+    for nb in g_config.nb_seeds:
+        cf.test(lambda ch, regs: nb if nb >= 1 else int(len(regs) * nb))
+        print ""
+
+    def register_in_the_first_hour(challenge, regs):
+        d0 = challenge[u"postingDate"]
+
+        for index, reg in enumerate(regs):
+            if (reg[u"registrationDate"] - d0).total_seconds() > 60 * 60:
+                return index + 1
+
+        return len(regs)
+
+    cf.test(register_in_the_first_hour)
 
 
 if __name__ == "__main__":

@@ -6,23 +6,32 @@ workspace "Similarity"
 
         kind "SharedLib"
         targetdir(home .. "/..")
-        targetextension ".pyd"
         targetname "sim"
 
         files { home .. "/**.h", home .. "/**.c", home .. "/**.cpp" }
+        defines { "NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION" }
 
-        filter "system:Windows"
-            pyroot = os.getenv("SystemDrive") .. "/Python27"
+        filter "system:windows"
+            targetextension ".pyd"
+
+            sysdrive = os.getenv("SystemDrive")
+            if sysdrive == nil then sysdrive = "C:" end
+            pyroot = sysdrive .. "/Python27"
 
             includedirs { pyroot .. "/include" }
             libdirs { pyroot .. "/libs" }
             links { "python27" }
 
             includedirs { pyroot .. "/Lib/site-packages/numpy/core/include" }
-            defines { "NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION" }
 
-        filter "system:Linux"
-            includedirs { "" }
+        filter "system:linux"
+            targetprefix ""
+
+            buildoptions { "-std=c++11", "`pkg-config python-2.7 --cflags`" }
+            links { "python2.7" }
+
+            pylibroot = "/usr/local/lib/python2.7/dist-packages"
+            includedirs { pylibroot .. "/numpy/core/include" }
 
         filter "configurations:Debug"
             targetsuffix "_d"

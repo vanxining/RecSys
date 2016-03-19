@@ -190,7 +190,7 @@ static PyObject *Calc(PyObject *self, PyObject *args, Functor func) {
 
 #if ENABLE_CACHE
 
-    auto it = gs_cacheMap.find(func);
+    auto it = gs_cacheMap.find(reinterpret_cast<void *>(func));
     if (it != gs_cacheMap.end()) {
         auto cit = it->second.find(userIndex);
         if (cit != it->second.end()) {
@@ -211,7 +211,8 @@ static PyObject *Calc(PyObject *self, PyObject *args, Functor func) {
     sim.reserve(numRows);
 
     for (auto i = 0; i < numRows; i++) {
-        sim.push_back({ i, func(xrow, Row<ET>(m ,i), nrow) });
+        Row<ET> yrow(m, i);
+        sim.push_back({ i, func(xrow, yrow, nrow) });
 
         nrow.Reset();
         xrow.Reset();
@@ -247,7 +248,7 @@ static PyObject *Calc(PyObject *self, PyObject *args, Functor func) {
 #if ENABLE_CACHE
 
     Py_INCREF(ret);
-    gs_cacheMap[func][userIndex] = ret;
+    gs_cacheMap[reinterpret_cast<void *>(func)][userIndex] = ret;
 
 #endif
 

@@ -1,7 +1,10 @@
 .idea
 data
 premake
+build
+obj
 
+*.so
 *.pyc
 *.pyd
 *.exp
@@ -10,3 +13,6 @@ premake
 *.ini
 test.py
 Thumbs.db
+
+Makefile
+*.make

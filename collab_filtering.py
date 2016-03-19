@@ -107,7 +107,7 @@ class CF:
                                                     y[u"registrationDate"]))
 
             nb_seeds = seeds_selector(challenge, regs)
-            if nb_seeds >= len(regs):
+            if nb_seeds == 0 or nb_seeds >= len(regs):
                 continue
 
             seeds = set()
@@ -305,10 +305,13 @@ def run_all_tests(cf):
 
     def register_in_the_first_hour(challenge, regs):
         d0 = challenge[u"postingDate"]
+        nb_old_men = 0
 
         for index, reg in enumerate(regs):
             if (reg[u"registrationDate"] - d0).total_seconds() > 60 * 60:
-                return index + 1
+                return nb_old_men  # TODO: When nb_old_men is 0?
+            elif reg[u"handle"] in cf.users:
+                nb_old_men += 1
 
         return len(regs)
 

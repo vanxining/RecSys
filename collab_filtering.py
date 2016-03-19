@@ -106,13 +106,15 @@ class CF:
             regs.sort(cmp=lambda x, y: cmp_datetime(x[u"registrationDate"],
                                                     y[u"registrationDate"]))
 
-            num_seeds = seeds_selector(challenge, regs)
-            if num_seeds >= len(regs):
+            nb_seeds = seeds_selector(challenge, regs)
+            if nb_seeds >= len(regs):
                 continue
 
             seeds = set()
+            real_begin = -1
 
-            for reg in regs[:num_seeds]:
+            # Find nb_seeds old men.
+            for index, reg in enumerate(regs):
                 handle = reg[u"handle"].lower()
 
                 # Not ever occurred in the training set.
@@ -120,11 +122,17 @@ class CF:
                     continue
 
                 seeds.add(self.users[handle])
+                if len(seeds) == nb_seeds:
+                    real_begin = index + 1
+                    break
+
+            if real_begin == len(regs):
+                continue
 
             real = set()
             newbie_index = len(self.users) + 10000
 
-            for reg in regs[num_seeds:]:
+            for reg in regs[real_begin:]:
                 handle = reg[u"handle"].lower()
 
                 if handle in self.users:

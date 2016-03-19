@@ -106,13 +106,15 @@ class CF:
             regs.sort(cmp=lambda x, y: cmp_datetime(x[u"registrationDate"],
                                                     y[u"registrationDate"]))
 
-            num_seeds = seeds_selector(challenge, regs)
-            if num_seeds >= len(regs):
+            nb_seeds = seeds_selector(challenge, regs)
+            if nb_seeds == 0 or nb_seeds >= len(regs):
                 continue
 
             seeds = set()
+            real_begin = -1
 
-            for reg in regs[:num_seeds]:
+            # Find nb_seeds old men.
+            for index, reg in enumerate(regs):
                 handle = reg[u"handle"].lower()
 
                 # Not ever occurred in the training set.
@@ -120,11 +122,17 @@ class CF:
                     continue
 
                 seeds.add(self.users[handle])
+                if len(seeds) == nb_seeds:
+                    real_begin = index + 1
+                    break
+
+            if real_begin == len(regs):
+                continue
 
             real = set()
             newbie_index = len(self.users) + 10000
 
-            for reg in regs[num_seeds:]:
+            for reg in regs[real_begin:]:
                 handle = reg[u"handle"].lower()
 
                 if handle in self.users:
@@ -218,20 +226,7 @@ def main():
     cf = CF()
     cf.train()
 
-    for nb in g_config.nb_seeds:
-        cf.test(lambda ch, regs: nb if nb >= 1 else int(len(regs) * nb))
-        print ""
-
-    def register_in_the_first_hour(challenge, regs):
-        d0 = challenge[u"postingDate"]
-
-        for index, reg in enumerate(regs):
-            if (reg[u"registrationDate"] - d0).total_seconds() > 60 * 60:
-                return index + 1
-
-        return len(regs)
-
-    cf.test(register_in_the_first_hour)
+    run_all_tests(cf)
 
     # Output the result.
 
@@ -301,6 +296,26 @@ def main():
         outf.write(sio.getvalue())
 
     stdout.write(sio.getvalue())
+
+
+def run_all_tests(cf):
+    for nb in g_config.nb_seeds:
+        cf.test(lambda ch, regs: nb if nb >= 1 else int(len(regs) * nb))
+        print ""
+
+    def register_in_the_first_hour(challenge, regs):
+        d0 = challenge[u"postingDate"]
+        nb_old_men = 0
+
+        for index, reg in enumerate(regs):
+            if (reg[u"registrationDate"] - d0).total_seconds() > 60 * 60:
+                return nb_old_men  # TODO: When nb_old_men is 0?
+            elif reg[u"handle"] in cf.users:
+                nb_old_men += 1
+
+        return len(regs)
+
+    cf.test(register_in_the_first_hour)
 
 
 if __name__ == "__main__":

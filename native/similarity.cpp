@@ -35,6 +35,43 @@ PyObject *ClearCache(PyObject *);
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// TODO: not thread-safe
+
+static double ALPHA = 0.75;
+static double BETA = 0.5;
+static double GAMMA = 0.5;
+
+double _SetCoefficient(const char *cef, double val) {
+    double old = 0;
+
+    if (strcmp(cef, "alpha") == 0) {
+        old = ALPHA;
+        ALPHA = val;
+    } else if (strcmp(cef, "beta") == 0) {
+        old = BETA;
+        BETA = val;
+    } else if (strcmp(cef, "gamma") == 0) {
+        old = GAMMA;
+        GAMMA = val;
+    }
+
+    return old;
+}
+
+static PyObject *SetCoefficient(PyObject *self, PyObject *args) {
+    const char *cef = nullptr;
+    double val = 0;
+
+    if (!PyArg_ParseTuple(args, "sd", &cef, &val)) {
+        return nullptr;
+    }
+
+    double old = _SetCoefficient(cef, val);
+    return PyFloat_FromDouble(old);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 inline int GetRowCount(PyArrayObject *array) {
     return PyArray_DIM(array, 0);
 }
@@ -334,7 +371,7 @@ static double _Neighbor(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &) {
         if (co_occurrence) {
             similarity += co_occurrence;
 
-            similarity += (yrow.PeekBackward() + yrow.PeekBackward()) * 0.75;
+            similarity += (yrow.PeekBackward() + yrow.PeekBackward()) * ALPHA;
         }
 
         xrow.Next();
@@ -356,8 +393,8 @@ static double _Neighbor2(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &) {
         if (co_occurrence) {
             similarity += co_occurrence;
 
-            similarity += (yrow.PeekBackward(1) + yrow.PeekBackward(1)) * 0.75;
-            similarity += (yrow.PeekBackward(2) + yrow.PeekBackward(2)) * 0.5;
+            similarity += (yrow.PeekBackward(1) + yrow.PeekBackward(1)) * ALPHA;
+            similarity += (yrow.PeekBackward(2) + yrow.PeekBackward(2)) * BETA;
         }
 
         xrow.Next();
@@ -381,7 +418,7 @@ static double _NeighborGlobal(Row<ET> &xrow, Row<ET> &yrow, Row<ET> &nrow) {
     double nzCount = gs_nzCache.rows[yrow.GetRowIndex()];
     double maxCount = gs_nzCache.maxCount;
 
-    return similarity * (nzCount / maxCount) * 0.5;
+    return similarity * (nzCount / maxCount) * GAMMA;
 }
 
 static PyObject *NeighborGlobal(PyObject *self, PyObject *args) {
@@ -409,6 +446,7 @@ static PyMethodDef _Methods[] = {
     { "NeighborGlobal", NeighborGlobal, METH_VARARGS, nullptr },
     { "Active", Active, METH_VARARGS, nullptr },
     { "ClearCache", (PyCFunction) ClearCache, METH_NOARGS, nullptr },
+    { "SetCoefficient", SetCoefficient, METH_VARARGS, nullptr },
     {  nullptr, nullptr, 0, nullptr }
 };
 

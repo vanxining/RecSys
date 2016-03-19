@@ -233,7 +233,6 @@ def main():
     stdout = sys.stdout
     sys.stdout = sio
 
-    print ""
     print "#registrants,,",
 
     for nb in g_config.nb_seeds:
@@ -314,6 +313,7 @@ def run_all_tests(cf):
         return len(regs)
 
     cf.test(register_in_the_first_hour)
+    print ""
 
 
 if __name__ == "__main__":

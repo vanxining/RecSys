@@ -111,29 +111,25 @@ class CF:
                 continue
 
             seeds = set()
-            real_begin = -1
 
             # Find nb_seeds old men.
-            for index, reg in enumerate(regs):
-                handle = reg[u"handle"].lower()
+            for reg in regs:
+                handle = reg[u"handle"]
 
                 # Not ever occurred in the training set.
                 if handle not in self.users:
                     continue
 
                 seeds.add(self.users[handle])
-                if len(seeds) == nb_seeds:
-                    real_begin = index + 1
-                    break
 
-            if real_begin == len(regs):
-                continue
+                if len(seeds) == nb_seeds:
+                    break
 
             real = set()
             newbie_index = len(self.users) + 10000
 
-            for reg in regs[real_begin:]:
-                handle = reg[u"handle"].lower()
+            for reg in regs:
+                handle = reg[u"handle"]
 
                 if handle in self.users:
                     user_index = self.users[handle]
@@ -141,7 +137,11 @@ class CF:
                     user_index = newbie_index
                     newbie_index += 1
 
-                real.add(user_index)
+                if user_index not in seeds:
+                    real.add(user_index)
+
+            if len(real) == 0:
+                continue
 
             predicted = set()
 
@@ -194,7 +194,7 @@ class CF:
             num_challenges += 1
 
             for reg in challenge[u"registrants"]:
-                handle = reg[u"handle"].lower()
+                handle = reg[u"handle"]
 
                 if handle not in self.users:
                     self.users[handle] = user_index
@@ -208,9 +208,7 @@ class CF:
             self.m[challenge_index, -1] = len(challenge[u"registrants"])
 
             for reg in challenge[u"registrants"]:
-                handle = reg[u"handle"].lower()
-
-                user_index = self.users[handle]
+                user_index = self.users[reg[u"handle"]]
                 self.m[challenge_index, user_index] = 1
 
         # 1 2 3    1 4 7

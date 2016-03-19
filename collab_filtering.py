@@ -178,6 +178,8 @@ class CF:
                 print "> Accuracy: %5.2f%%" % (accuracy * 100)
                 print "> Recall: %5.2f%% [#real: %2d]" % (recall * 100, len(real))
 
+        assert nb_processed > 0
+
         test_round = TestRound(time.time() - start,
                                accuracy_sum / float(nb_processed),
                                recall_sum / float(nb_processed),
@@ -224,7 +226,7 @@ def main():
     cf = CF()
     cf.train()
 
-    run_all_tests(cf)
+    run_all_tests(cf, first_hour=True)
 
     # Output the result.
 
@@ -295,7 +297,7 @@ def main():
     stdout.write(sio.getvalue())
 
 
-def run_all_tests(cf):
+def run_all_tests(cf, first_hour=True):
     for nb in g_config.nb_seeds:
         cf.test(lambda ch, regs: nb if nb >= 1 else int(len(regs) * nb))
         print ""
@@ -312,8 +314,9 @@ def run_all_tests(cf):
 
         return len(regs)
 
-    cf.test(register_in_the_first_hour)
-    print ""
+    if first_hour:
+        cf.test(register_in_the_first_hour)
+        print ""
 
 
 if __name__ == "__main__":

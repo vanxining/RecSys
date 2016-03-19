@@ -4,6 +4,7 @@ premake
 build
 obj
 
+*.swp
 *.so
 *.pyc
 *.pyd

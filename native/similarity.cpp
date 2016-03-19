@@ -35,14 +35,20 @@ PyObject *ClearCache(PyObject *);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// TODO: not thread-safe
+// TODO: Not thread-safe
+// TODO: Cache
 
-static double ALPHA = 0.75;
-static double BETA = 0.5;
-static double GAMMA = 0.5;
+static double ALPHA = 0.6;
+static double BETA = 0.55;
+static double GAMMA = 0.65;
 
 double _SetCoefficient(const char *cef, double val) {
-    double old = 0;
+    if (val < 0.0) {
+        fprintf(stderr, "New value can't be negative.\n");
+        return -1.0;
+    }
+
+    double old = 0.0;
 
     if (strcmp(cef, "alpha") == 0) {
         old = ALPHA;
@@ -51,6 +57,11 @@ double _SetCoefficient(const char *cef, double val) {
         old = BETA;
         BETA = val;
     } else if (strcmp(cef, "gamma") == 0) {
+        if (val == 0.0) {
+            fprintf(stderr, "gamma can't be zero.\n");
+            return -1.0;
+        }
+
         old = GAMMA;
         GAMMA = val;
     }
@@ -203,7 +214,11 @@ PyObject *ClearCache(PyObject *) {
         for (auto cit = it->second.begin(); cit != it->second.end(); ++cit) {
             Py_DECREF(cit->second);
         }
+
+        it->second.clear();
     }
+
+    gs_cacheMap.clear();
 
 #endif
 

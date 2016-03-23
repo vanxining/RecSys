@@ -288,7 +288,7 @@ def main():
     print open("config/collab_filtering.ini").read()
 
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    with open("data/%s-%s.csv" % (ts, g_config.sim_func), "w") as outf:
+    with open("results/%s-%s.csv" % (ts, g_config.sim_func), "w") as outf:
         outf.write(datetime.now().isoformat() + '\n')
         outf.write("Training set size: %d, " % cf.m.shape[1])
         outf.write("Test set size: %d\n\n" % num_lines)

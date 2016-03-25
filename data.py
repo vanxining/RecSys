@@ -22,17 +22,19 @@ class Config:
         end_date = config.get("default", "end_date").split('-')
         self.end_date = datetime(*[int(i) for i in end_date])
 
+        self.win_times_threshold = config.getint("default",
+                                                 "win_times_threshold")
+
 
 g_config = Config()
 
 
-class Data:
+class Data(object):
     def __init__(self):
         self.client = pymongo.MongoClient()
         self.db = self.client.topcoder
 
-    @staticmethod
-    def is_challenge_ok(challenge):
+    def is_challenge_ok(self, challenge):
         if u"registrants" not in challenge:
             return False
 
@@ -70,28 +72,37 @@ class Data:
                 yield challenge
 
 
+def get_winner(challenge):
+    for submission in challenge[u"finalSubmissions"]:
+        if submission[u"placement"] == 1:
+            if submission[u"submissionStatus"] == u"Active":
+                return submission[u"handle"]
+
+
 class DlData(Data):
+    NUM_VITAL_FEATURES = 2
+
     def __init__(self):
         Data.__init__(self)
+
+        self.user_win_times = None
+        self.count_user_win_times()
+
+        self.user_ids = {}
+        for index, user in enumerate(self.user_win_times):
+            self.user_ids[user] = index
 
         self.plat_tech = defaultdict(int)
         self.nb_training = 0
         self.nb_test = 0
 
-        def do_count(challenge):
-            for plat in challenge["platforms"]:
-                self.plat_tech[plat] += 1
-
-            for tech in challenge["technology"]:
-                self.plat_tech[tech] += 1
-
         for challenge in Data.training_set(self):
             self.nb_training += 1
-            do_count(challenge)
+            self.count_platforms_and_technologies(challenge)
 
         for challenge in Data.test_set(self):
             self.nb_test += 1
-            do_count(challenge)
+            self.count_platforms_and_technologies(challenge)
 
         for index, pt in enumerate(self.plat_tech):
             self.plat_tech[pt] = index
@@ -100,20 +111,68 @@ class DlData(Data):
         print "# test:", self.nb_test
         print "# plaforms & technologies:", len(self.plat_tech)
 
+    def count_user_win_times(self):
+        user_win_times = defaultdict(int)
+
+        for challenge in Data.training_set(self):
+            user_win_times[get_winner(challenge)] += 1
+
+        self.user_win_times = user_win_times
+
+        print "Max win times:", max(user_win_times.values())
+
+    def count_platforms_and_technologies(self, challenge):
+        for plat in challenge[u"platforms"]:
+            self.plat_tech[plat] += 1
+
+        for tech in challenge[u"technology"]:
+            self.plat_tech[tech] += 1
+
+    def is_challenge_ok(self, challenge):
+        ok = Data.is_challenge_ok(self, challenge)
+
+        if ok and self.user_win_times:
+            return (self.user_win_times[get_winner(challenge)] >=
+                    g_config.win_times_threshold)
+        else:
+            return ok
+
+    def validate_matrix(self, m):
+        count = 20
+        for index, challenge in enumerate(Data.training_set(self)):
+            if index % 5 != 0:
+                continue
+
+            count -= 1
+            if count == 0:
+                break
+
+            for plat in challenge[u"platforms"]:
+                assert m[index, self.plat_tech[plat] + self.NUM_VITAL_FEATURES] == 1
+
+            for tech in challenge[u"technology"]:
+                assert m[index, self.plat_tech[tech] + self.NUM_VITAL_FEATURES] == 1
+
+            winner = get_winner(challenge)
+
+            assert m[index, -1] == self.user_ids[winner]
+            assert self.user_win_times[winner] >= g_config.win_times_threshold
+
     def generate_matrix(self, nb_rows, iterator):
-        OFFSET = 2
-        nb_cols = len(self.plat_tech) + OFFSET + 1
+        nb_cols = len(self.plat_tech) + self.NUM_VITAL_FEATURES + 1
         m = np.zeros((nb_rows, nb_cols), dtype=np.uint16)
 
         for index, challenge in enumerate(iterator(self)):
-            m[index, 0] = challenge["prize"][0]
-            m[index, 1] = len(challenge["prize"])
+            m[index, 0] = challenge[u"prize"][0]
+            m[index, 1] = len(challenge[u"prize"])
 
-            for plat in challenge["platforms"]:
-                m[index, self.plat_tech[plat] + OFFSET] = 1
+            for plat in challenge[u"platforms"]:
+                m[index, self.plat_tech[plat] + self.NUM_VITAL_FEATURES] = 1
 
-            for tech in challenge["technology"]:
-                m[index, self.plat_tech[tech] + OFFSET] = 1
+            for tech in challenge[u"technology"]:
+                m[index, self.plat_tech[tech] + self.NUM_VITAL_FEATURES] = 1
+
+            m[index, nb_cols - 1] = self.user_ids[get_winner(challenge)]
 
         return m
 
@@ -126,8 +185,10 @@ class DlData(Data):
 
 def main():
     data = DlData()
+
     ts = data.training_set()
-    np.savetxt("training.txt", ts, fmt="%d")
+    data.validate_matrix(ts)
+    # np.savetxt("training.txt", ts[:100, -20:], fmt="%d")
 
 
 if __name__ == "__main__":

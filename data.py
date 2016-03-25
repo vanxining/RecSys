@@ -89,8 +89,11 @@ class DlData(Data):
         self.count_user_win_times()
 
         self.user_ids = {}
-        for index, user in enumerate(self.user_win_times):
-            self.user_ids[user] = index
+        index = 0
+        for user in self.user_win_times:
+            if self.user_win_times[user] >= g_config.win_times_threshold:
+                self.user_ids[user] = index
+                index += 1
 
         self.plat_tech = defaultdict(int)
         self.nb_training = 0

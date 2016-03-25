@@ -137,9 +137,9 @@ class DlData(Data):
         else:
             return ok
 
-    def validate_matrix(self, m):
+    def validate_matrix(self, m, iterator):
         count = 20
-        for index, challenge in enumerate(Data.training_set(self)):
+        for index, challenge in enumerate(iterator(self)):
             if index % 5 != 0:
                 continue
 
@@ -186,9 +186,14 @@ class DlData(Data):
 def main():
     data = DlData()
 
-    ts = data.training_set()
-    data.validate_matrix(ts)
-    # np.savetxt("training.txt", ts[:100, -20:], fmt="%d")
+    training_set = data.training_set()
+    data.validate_matrix(training_set, Data.training_set)
+
+    test_set = data.test_set()
+    data.validate_matrix(test_set, Data.test_set)
+
+    np.savetxt("training.txt", training_set, fmt="%d")
+    np.savetxt("test.txt", test_set, fmt="%d")
 
 
 if __name__ == "__main__":

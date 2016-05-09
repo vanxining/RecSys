@@ -80,6 +80,7 @@ def get_winner(challenge):
 
 
 class DlData(Data):
+    # First prize, Prize count
     NUM_VITAL_FEATURES = 2
 
     def __init__(self):
@@ -146,10 +147,6 @@ class DlData(Data):
             if index % 5 != 0:
                 continue
 
-            count -= 1
-            if count == 0:
-                break
-
             for plat in challenge[u"platforms"]:
                 assert m[index, self.plat_tech[plat] + self.NUM_VITAL_FEATURES] == 1
 
@@ -161,8 +158,12 @@ class DlData(Data):
             assert m[index, -1] == self.user_ids[winner]
             assert self.user_win_times[winner] >= g_config.win_times_threshold
 
+            count -= 1
+            if count == 0:
+                break
+
     def generate_matrix(self, nb_rows, iterator):
-        nb_cols = len(self.plat_tech) + self.NUM_VITAL_FEATURES + 1
+        nb_cols = self.NUM_VITAL_FEATURES + len(self.plat_tech) + 1
         m = np.zeros((nb_rows, nb_cols), dtype=np.uint16)
 
         for index, challenge in enumerate(iterator(self)):

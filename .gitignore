@@ -12,6 +12,7 @@ obj
 *.lib
 *.pdb
 *.ini
+*.txt
 test.py
 Thumbs.db
 

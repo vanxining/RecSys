@@ -30,7 +30,7 @@ workspace "Similarity"
             buildoptions { "-std=c++11", "`pkg-config python-2.7 --cflags`" }
             links { "python2.7" }
 
-            pylibroot = "/usr/local/lib/python2.7/dist-packages"
+            pylibroot = os.getenv("HOME") .. "/anaconda2/lib/python2.7/site-packages"
             includedirs { pylibroot .. "/numpy/core/include" }
 
         filter "configurations:Debug"

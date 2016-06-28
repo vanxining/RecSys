@@ -21,6 +21,39 @@ def cmp_datetime(a, b):
     return -1 if a < b else 1 if a > b else 0
 
 
+class MF(object):
+    SET = 5
+    THRESHOLD = 0.005
+
+    def __init__(self):
+        self.V = None
+        self.W = None
+        self.H = None
+
+    def factorize(self):
+        if "nimfa" not in globals():
+            import nimfa
+
+        snmf = nimfa.Snmf(self.V, seed="random_vcol", rank=30, max_iter=30, version='r', eta=1.,
+                          beta=1e-4, i_conv=10, w_min_change=0)
+        print "Algorithm: %s\nInitialization: %s\nRank: %d" % (snmf, snmf.seed, snmf.rank)
+
+        fit = snmf()
+
+        sparse_w, sparse_h = fit.fit.sparseness()
+        print """Stats:
+- iterations: %d
+- Euclidean distance: %5.3f
+- Sparseness basis: %5.3f, mixture: %5.3f""" % (fit.fit.n_iter,
+                                                fit.distance(metric='euclidean'),
+                                                sparse_w, sparse_h)
+
+        self.W, self.H = fit.basis(), fit.coef()
+
+    def predict(self, i, j):
+        return max(min((self.W[i, :] * self.H[:, j])[0, 0], 1), 0)
+
+
 class Config(object):
     def __init__(self):
         config = ConfigParser.RawConfigParser()
@@ -34,6 +67,7 @@ class Config(object):
         end_date = config.get("default", "end_date").split('-')
         self.end_date = datetime(*[int(i) for i in end_date])
 
+        self.use_mf = config.get("default", "use_mf") == "True"
         self.sim_func = config.get("default", "sim_func")
 
 
@@ -47,6 +81,7 @@ class CF(object):
 
         self.users = {}
         self.m = None
+        self.factorizer = MF() if g_config.use_mf else None
 
         self.test_rounds = []
         self.results = defaultdict(list)
@@ -88,8 +123,17 @@ class CF(object):
             }
         }
 
+        challenges = [] if g_config.use_mf else None
+
         for challenge in self.db.challenges.find(condition):
             if CF.is_challenge_ok(challenge):
+                if challenges is not None:
+                    challenges.append(challenge)
+                else:
+                    yield challenge
+
+        if challenges is not None:
+            for challenge in challenges:
                 yield challenge
 
     def test(self, seeds_selector, top_n=10):
@@ -144,6 +188,15 @@ class CF(object):
             if len(real) == 0:
                 continue
 
+            # Prepare for matrix factorization.
+            if self.factorizer is not None:
+                self.factorizer.V[:, -1].fill(0)
+
+                for seed_index in seeds:
+                    self.factorizer.V[seed_index, -1] = MF.SET
+
+                self.factorizer.factorize()
+
             # Predict.
             predicted = set()
 
@@ -152,6 +205,12 @@ class CF(object):
 
                 before = len(predicted)
                 for peer_index in candidates:
+                    mf = self.factorizer.predict(peer_index, -1)
+                    print "--- mf: %5.4f" % mf
+
+                    if mf < MF.THRESHOLD:
+                        continue
+
                     if peer_index not in seeds and peer_index not in predicted:
                         predicted.add(peer_index)
 
@@ -221,6 +280,12 @@ class CF(object):
         # 7 8 9    3 6 9
 
         self.m = np.transpose(self.m)
+
+        if self.factorizer is not None:
+            rows, cols = self.m.shape
+            self.factorizer.V = np.zeros((rows - 1, cols + 1), dtype=np.uint8)
+            self.factorizer.V[:, :-1] = self.m[:-1, :] * MF.SET
+
 
 
 def main():

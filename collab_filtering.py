@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 
 import sys
 import time
@@ -20,7 +21,7 @@ def cmp_datetime(a, b):
     return -1 if a < b else 1 if a > b else 0
 
 
-class Config:
+class Config(object):
     def __init__(self):
         config = ConfigParser.RawConfigParser()
         config.read("config/collab_filtering.ini")
@@ -39,7 +40,7 @@ class Config:
 g_config = Config()
 
 
-class CF:
+class CF(object):
     def __init__(self):
         self.client = pymongo.MongoClient()
         self.db = self.client.topcoder
@@ -143,13 +144,14 @@ class CF:
             if len(real) == 0:
                 continue
 
+            # Predict.
             predicted = set()
 
             for user_index in seeds:
-                a = sim_func(self.m, user_index, top_n * 5)
+                candidates = sim_func(self.m, user_index, top_n * 5)
 
                 before = len(predicted)
-                for peer_index in a:
+                for peer_index in candidates:
                     if peer_index not in seeds and peer_index not in predicted:
                         predicted.add(peer_index)
 
@@ -204,6 +206,7 @@ class CF:
 
         num_users = user_index
 
+        # The last column contains the numbers of registrants of each task.
         self.m = np.zeros((num_challenges, num_users + 1), dtype=np.uint8)
 
         for challenge_index, challenge in enumerate(self.training_set()):

@@ -8,7 +8,7 @@ client = pymongo.MongoClient()
 db = client.topcoder
 
 
-def platforms_and_technologies():
+def extract_all():
     platec = {}
 
     for challenge in db.challenges.find():
@@ -21,6 +21,11 @@ def platforms_and_technologies():
     for index, key in enumerate(platec):
         platec[key] = index
 
+    return platec
+
+
+def platforms_and_technologies():
+    platec = extract_all()
     affinity = np.zeros((len(platec), len(platec)), dtype=np.uint8)
 
     for challenge in db.challenges.find():

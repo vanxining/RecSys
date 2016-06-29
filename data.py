@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 
 import ConfigParser
 
@@ -198,6 +199,9 @@ def main():
 
     np.savetxt("training.txt", training_set, fmt="%d")
     np.savetxt("test.txt", test_set, fmt="%d")
+
+    print "# distinct developers:", len(data.user_ids)
+    print "DONE!"
 
 
 if __name__ == "__main__":

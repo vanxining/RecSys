@@ -1,0 +1,173 @@
+J2EE: 360
+IBM Bluemix: 158
+tvOS: 2
+NoSQL: 37
+Angular.js: 1355
+HP Haven: 12
+SSIS: 3
+Flash: 4
+IBM Rational Team Concert: 1
+Fortran: 25
+MySQL: 309
+Gaming: 14
+IBM WebSphere Application Server: 72
+AWS: 210
+Ruby on Rails: 49
+iOS 8.0: 114
+Salesforce.com: 1178
+WinForms Controls: 2
+SAP: 2
+.NET 3.5: 80
+.NET 2.0: 4
+Illustrator: 4
+Mobile: 425
+Windows Server: 81
+iOS: 2510
+Lightning: 53
+AJAX: 206
+Google App Engine: 60
+Dojo: 44
+Force.com Sites: 41
+Cisco: 15
+PhoneGap: 155
+Ruby: 146
+Java Application: 36
+API: 431
+SQL: 327
+Go: 24
+PHP: 319
+Word/Rich Text: 8
+JUnit: 13
+ADO.NET: 9
+jQuery: 318
+Twitter Bootstrap: 59
+Java: 3097
+Backbone.js: 7
+Struts: 257
+IBM Lotus Domino: 2
+Perl: 26
+Vertica: 20
+Heroku: 401
+UML: 3
+Android: 1762
+XSL: 7
+JQuery: 222
+OSX: 5
+Hibernate: 109
+MSMQ: 1
+SQL Server: 155
+HP IDOL OnDemand: 96
+JMS: 8
+IBM Lotus Notes: 6
+Maven: 8
+CoffeeScript: 88
+Brivo Labs: 118
+HTML: 3562
+Facebook: 12
+Twilio: 3
+Android 2.2: 46
+Android 2.0: 3
+Android 2.1: 3
+Swift: 340
+Microsoft Azure: 53
+iOS 5.0: 153
+Box: 38
+Play! Framework: 5
+C: 165
+Drools: 11
+XAML: 6
+LDAP: 10
+ASP.NET AJAX: 3
+REST: 358
+Swing: 37
+CSS: 1985
+JDBC: 49
+ASP.NET: 229
+Xcode: 267
+.NET 4.0: 194
+Node.js: 1502
+Titanium: 5
+Beanstalk: 3
+Apache Derby: 1
+Chatter: 26
+Blackberry SDK: 4
+Sencha Touch 2: 11
+ReactJS: 13
+jQuery Mobile: 9
+SFDC Mobile: 24
+Wordpress: 245
+HTTP: 174
+COM: 1
+iBATIS/MyBatis: 1
+iOS 6.0: 93
+JSF: 5
+Eclipse Plugin: 12
+C#: 543
+Oracle 10g: 186
+Express: 90
+iOS 4.0: 122
+Microsoft SilverLight: 22
+JSON: 339
+JSP: 453
+Web Services: 134
+WPF: 27
+HPE Haven OnDemand: 6
+Servlet: 49
+JavaBean: 3
+XML: 68
+.NET: 448
+Custom Tag: 4
+Data Science: 24
+PL/SQL: 2
+R: 4
+EC2: 147
+IBM WebSphere MQ: 4
+Docker: 20
+Sharepoint 3.0: 15
+Objective C: 300
+Cloud Foundry: 23
+EJB 3: 93
+Smartsheet: 29
+MongoDB: 401
+FinancialForce: 62
+Windows Server 2003: 7
+ActionScript: 5
+Google API: 139
+Apex: 712
+JavaScript: 3492
+Redis: 27
+.NET 3.0: 6
+Other: 2734
+IBM Rational Software Architect: 4
+Flex: 1
+IIS: 80
+NodeJS: 1238
+Python: 253
+IBM DB2: 114
+SQL Server 2008: 108
+IBM Rational Application Developer: 5
+EJB: 53
+Groovy: 7
+VB: 31
+Salesforce: 352
+Active Directory: 5
+DocuSign: 48
+VB.NET: 45
+Bootstrap: 423
+Force.com: 280
+C++: 240
+Applet: 4
+Elasticsearch: 5
+HTML5: 1191
+Photoshop: 21
+Google: 257
+PostgreSQL: 335
+JPA: 31
+Spring: 471
+IDOL OnDemand: 11
+MESH01: 84
+Windows Communication Foundation: 76
+CloudFactor: 8
+Linux: 8
+IBM AIX: 13
+Visualforce: 525

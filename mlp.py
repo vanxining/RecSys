@@ -8,8 +8,8 @@ from keras.utils import np_utils, generic_utils
 import numpy as np
 
 
-training = np.loadtxt("training.txt", dtype=np.uint16)
-test = np.loadtxt("test.txt", dtype=np.uint16)
+training = np.loadtxt("datasets/training.txt", dtype=np.uint16)
+test = np.loadtxt("datasets/test.txt", dtype=np.uint16)
 
 X_train = training[:, :-1]
 y_train = training[:, -1]

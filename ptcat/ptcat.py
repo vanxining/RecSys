@@ -1,8 +1,12 @@
+#!/usr/bin/env python2
 
 import os
 
 
 def _get_path(fname):
+    if __file__[0] not in "./":
+        return fname
+
     return os.path.abspath(os.path.dirname(__file__) + os.sep + fname)
 
 

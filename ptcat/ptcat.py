@@ -1,9 +1,16 @@
 
+import os
+
+
+def _get_path(fname):
+    return os.path.abspath(os.path.dirname(__file__) + os.sep + fname)
+
+
 platech = {}
-for index, line in enumerate(open("platech.txt").readlines()):
+for index, line in enumerate(open(_get_path("platech.txt")).readlines()):
     platech[line[:line.index(':')]] = index
 
-categories = open("result.txt").read().split(',')
+categories = [int(n) for n in open(_get_path("result.txt")).read().split(',')]
 
 
 def get_category(pt):
@@ -11,6 +18,11 @@ def get_category(pt):
         return categories[platech[pt]]
 
 
+def get_number_of_platech():
+    return max(categories)
+
+
 if __name__ == "__main__":
-    assert get_category("Java") == "5"
-    assert get_category("MySQL") == "10"
+    assert get_number_of_platech() == 11
+    assert get_category("Java") == 5
+    assert get_category("MySQL") == 10

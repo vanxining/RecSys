@@ -2,6 +2,7 @@
 
 import pymongo
 import numpy as np
+from sklearn.cluster import KMeans
 
 
 client = pymongo.MongoClient()
@@ -10,8 +11,11 @@ db = client.topcoder
 
 def extract_all():
     platec = {}
+    nb_challenges = 0
 
     for challenge in db.challenges.find():
+        nb_challenges += 1
+
         for plat in challenge["platforms"]:
             platec[plat.lower()] = 0
 
@@ -21,11 +25,11 @@ def extract_all():
     for index, key in enumerate(platec):
         platec[key] = index
 
-    return platec
+    return platec, nb_challenges
 
 
 def platforms_and_technologies():
-    platec = extract_all()
+    platec, _ = extract_all()
     affinity = np.zeros((len(platec), len(platec)), dtype=np.uint8)
 
     for challenge in db.challenges.find():
@@ -48,6 +52,29 @@ def platforms_and_technologies():
     return affinity
 
 
+def scikit_learn_format():
+    platec, nb_challenges = extract_all()
+    data = np.zeros((nb_challenges, len(platec)), dtype=np.uint8)
+
+    for index, challenge in enumerate(db.challenges.find()):
+        for plat in challenge["platforms"]:
+            data[index, platec[plat.lower()]] = 1
+
+        for tech in challenge["technology"]:
+            data[index, platec[tech.lower()]] = 1
+
+    return np.transpose(data)
+
+
+def cluster():
+    estimator = KMeans(n_clusters=8)
+    data = scikit_learn_format()
+    labels = estimator.fit_predict(data)
+    print labels
+    quit()
+
+
 if __name__ == "__main__":
-    platforms_and_technologies()
+    cluster()
+    print platforms_and_technologies()
 

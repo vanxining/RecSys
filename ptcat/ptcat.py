@@ -4,10 +4,13 @@ import os
 
 
 def _get_path(fname):
-    if __file__[0] not in "./":
+    if os.path.exists(fname):
         return fname
 
-    return os.path.abspath(os.path.dirname(__file__) + os.sep + fname)
+    fname = os.path.abspath(os.path.dirname(__file__) + os.sep + fname)
+    assert os.path.exists(fname)
+
+    return fname
 
 
 platech = {}

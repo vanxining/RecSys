@@ -1,13 +1,42 @@
 #!/usr/bin/env python2
 
-import datasets
+import ConfigParser
+from StringIO import StringIO
+from datetime import datetime
+
 from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
+
+import datasets
 
 
-TopN = 30
+class Config:
+    def __init__(self):
+        config = ConfigParser.RawConfigParser()
+
+        fname = "config/classifiers.ini"
+        with open(fname, "r") as inf:
+            self.raw = inf.read()
+            inf.seek(0)
+            config.readfp(inf, fname)
+
+        self.topn = config.getint("default", "topn")
+        self.normalize_dataset = config.getboolean("default",
+                                                   "normalize_dataset")
+        self.classifier = config.get("default", "classifier")
+
+    def create_classifier(self):
+        if self.classifier == "NB":
+            return GaussianNB()
+
+        if self.classifier == "LR":
+            return LogisticRegression()
 
 
-def recommend(proba, n):
+g_config = Config()
+
+
+def recommend(proba):
     pairs = []
     for index, p in enumerate(proba):
         pairs.append((index, p))
@@ -15,16 +44,27 @@ def recommend(proba, n):
     pairs.sort(key=lambda pair: pair[1], reverse=True)
 
     rec = []
-    for i in xrange(n):
+    for i in xrange(g_config.topn):
         rec.append(pairs[i][0])
 
     return rec
 
 
 def output_result(classifier, nb_test, nb_correct):
-    print type(classifier)
-    print "# Correct:", nb_correct
-    print "%g%%" % (float(nb_correct) / nb_test * 100)
+    sio = StringIO()
+
+    sio.write(str(type(classifier)) + "\n")
+    sio.write(g_config.raw.strip() + "\n")
+    sio.write("----------\n")
+    sio.write("# Correct: %d\n" % nb_correct)
+    sio.write("%g%%" % (float(nb_correct) / nb_test * 100))
+
+    print(sio.getvalue())
+
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    with open("results/%s-classifiers-%s.txt" % (ts, g_config.classifier),
+              "w") as outf:
+        outf.write(sio.getvalue())
 
 
 def run(classifier, dataset):
@@ -34,7 +74,7 @@ def run(classifier, dataset):
     nb_correct = 0
 
     for p, real in zip(proba, dataset.y_test):
-        rec_list = recommend(p, TopN)
+        rec_list = recommend(p)
 
         if real in rec_list:
             nb_correct += 1
@@ -43,10 +83,8 @@ def run(classifier, dataset):
 
 
 def main():
-    dataset = datasets.topcoder(normalize=False)
-    gnb = GaussianNB()
-
-    run(gnb, dataset)
+    dataset = datasets.topcoder(normalize=g_config.normalize_dataset)
+    run(g_config.create_classifier(), dataset)
 
 
 if __name__ == "__main__":

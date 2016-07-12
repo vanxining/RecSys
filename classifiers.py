@@ -1,24 +1,18 @@
 #!/usr/bin/env python2
 
-import ConfigParser
 from StringIO import StringIO
-from datetime import datetime
 
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 
+import myconfig
 import datasets
 
 
-class Config:
+class Config(myconfig.MyConfig):
     def __init__(self):
-        config = ConfigParser.RawConfigParser()
-
-        fname = "config/classifiers.ini"
-        with open(fname, "r") as inf:
-            self.raw = inf.read()
-            inf.seek(0)
-            config.readfp(inf, fname)
+        super(Config, self).__init__()
+        config = self.open("config/classifiers.ini")
 
         self.topn = config.getint("default", "topn")
         self.normalize_dataset = config.getboolean("default",
@@ -61,8 +55,8 @@ def output_result(classifier, nb_test, nb_correct):
 
     print(sio.getvalue())
 
-    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    with open("results/%s-classifiers-%s.txt" % (ts, g_config.classifier),
+    ts = myconfig.get_current_timestamp()
+    with open("results/%s-classifiers-%s.log" % (ts, g_config.classifier),
               "w") as outf:
         outf.write(sio.getvalue())
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-import ConfigParser
+import StringIO
 
 from datetime import datetime
 from collections import defaultdict
@@ -8,6 +8,7 @@ from collections import defaultdict
 import pymongo
 import numpy as np
 
+import myconfig
 import ptcat
 
 
@@ -15,15 +16,13 @@ def cmp_datetime(a, b):
     return -1 if a < b else 1 if a > b else 0
 
 
-class Config:
+class Config(myconfig.MyConfig):
     def __init__(self):
-        config = ConfigParser.RawConfigParser()
-        config.read("config/data.ini")
+        super(Config, self).__init__()
+        config = self.open("config/data.ini")
 
         self.year_from = config.getint("default", "year_from")
-
-        end_date = config.get("default", "end_date").split('-')
-        self.end_date = datetime(*[int(i) for i in end_date])
+        self.end_date = myconfig.parse_date(config.get("default", "end_date"))
 
         self.win_times_threshold = config.getint("default",
                                                  "win_times_threshold")
@@ -102,6 +101,8 @@ class DlData(Data):
     def __init__(self):
         Data.__init__(self)
 
+        self.sio = StringIO.StringIO()
+
         self.user_win_times = None
         self.count_user_win_times()
 
@@ -115,14 +116,18 @@ class DlData(Data):
         self.nb_training = 0
         self.nb_test = 0
 
-        for challenge in Data.training_set(self):
+        for _ in Data.training_set(self):
             self.nb_training += 1
 
-        for challenge in Data.test_set(self):
+        for _ in Data.test_set(self):
             self.nb_test += 1
 
-        print "# traning:", self.nb_training
-        print "# test:", self.nb_test
+        self.log("# traning: %d" % self.nb_training)
+        self.log("# test: %d" % self.nb_test)
+
+    def log(self, msg):
+        print(msg)
+        self.sio.write(msg + "\n")
 
     def _count_vital_features(self):
         fake_line = {}
@@ -138,7 +143,7 @@ class DlData(Data):
 
         self.user_win_times = user_win_times
 
-        print "Max win times:", max(user_win_times.values())
+        self.log("Max win times: %d" % max(user_win_times.values()))
 
     def is_challenge_ok(self, challenge):
         ok = Data.is_challenge_ok(self, challenge)
@@ -253,8 +258,12 @@ def main():
     np.savetxt("datasets/training.txt", training_set, fmt="%d")
     np.savetxt("datasets/test.txt", test_set, fmt="%d")
 
-    print "# distinct developers:", len(data.user_ids)
-    print "DONE!"
+    data.log("# distinct developers: %d" % len(data.user_ids))
+    data.log("DONE!")
+
+    ts = myconfig.get_current_timestamp()
+    with open("results/%s-dataset.log" % ts, "w") as outf:
+        outf.write(data.sio.getvalue())
 
 
 if __name__ == "__main__":

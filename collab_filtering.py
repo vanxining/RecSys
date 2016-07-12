@@ -2,7 +2,6 @@
 
 import sys
 import time
-import ConfigParser
 
 from StringIO import StringIO
 from datetime import datetime
@@ -10,6 +9,8 @@ from collections import namedtuple, defaultdict
 
 import pymongo
 import numpy as np
+
+import myconfig
 import sim
 
 
@@ -21,18 +22,16 @@ def cmp_datetime(a, b):
     return -1 if a < b else 1 if a > b else 0
 
 
-class Config(object):
+class Config(myconfig.MyConfig):
     def __init__(self):
-        config = ConfigParser.RawConfigParser()
-        config.read("config/collab_filtering.ini")
+        super(Config, self).__init__()
+        config = self.open("config/collab_filtering.ini")
 
         nb_seeds = config.get("default", "nb_seeds").split(',')
         self.nb_seeds = [int(n) if '.' not in n else float(n) for n in nb_seeds]
 
         self.year_from = config.getint("default", "year_from")
-
-        end_date = config.get("default", "end_date").split('-')
-        self.end_date = datetime(*[int(i) for i in end_date])
+        self.end_date = myconfig.parse_date(config.get("default", "end_date"))
 
         self.sim_func = config.get("default", "sim_func")
 
@@ -288,9 +287,9 @@ def main():
     print "Time\n"
 
     print "Total time cost: %.2f seconds.\n\n" % (time.time() - start)
-    print open("config/collab_filtering.ini").read()
+    print g_config.raw
 
-    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    ts = myconfig.get_current_timestamp()
     with open("results/%s-%s.csv" % (ts, g_config.sim_func), "w") as outf:
         outf.write(datetime.now().isoformat() + '\n')
         outf.write("Training set size: %d, " % cf.m.shape[1])

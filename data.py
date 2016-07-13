@@ -27,6 +27,22 @@ class Config(myconfig.MyConfig):
         self.win_times_threshold = config.getint("default",
                                                  "win_times_threshold")
 
+        whitelist = config.get("default", "challenge_types_whitelist").strip()
+        if whitelist == "*":
+            self.challenge_types_whitelist = ()
+        else:
+            whitelist = whitelist.replace(", ", ",")
+            while len(whitelist) > 0 and whitelist[-1] == ',':
+                whitelist = whitelist[:-1]
+
+            self.challenge_types_whitelist = set(whitelist.split(','))
+
+    def is_challenge_type_ok(self, challenge_type):
+        if len(self.challenge_types_whitelist) == 0:
+            return True
+
+        return challenge_type in self.challenge_types_whitelist
+
 
 g_config = Config()
 
@@ -43,9 +59,11 @@ class Data(object):
         if len(challenge[u"registrants"]) == 0:
             return False
 
-        # TODO: challengeType
-        return (challenge[u"challengeType"] == u"First2Finish" and
-                challenge[u"type"] == u"develop" and
+        if not g_config.is_challenge_type_ok(challenge[u"challengeType"]):
+            return False
+
+        # TODO: type
+        return (challenge[u"type"] == u"develop" and
                 len(challenge[u"prize"]) > 0)
 
     def training_set(self):
@@ -103,6 +121,9 @@ class DlData(Data):
 
         self.sio = StringIO.StringIO()
 
+        self.log(g_config.raw)
+        self.log("----------")
+
         self.user_win_times = None
         self.count_user_win_times()
 
@@ -113,14 +134,22 @@ class DlData(Data):
                 self.user_ids[user] = index
                 index += 1
 
+        challenge_types = set()
+
         self.nb_training = 0
         self.nb_test = 0
 
-        for _ in Data.training_set(self):
+        for challenge in Data.training_set(self):
+            challenge_types.add(challenge[u"challengeType"])
             self.nb_training += 1
 
-        for _ in Data.test_set(self):
+        for challenge in Data.test_set(self):
+            challenge_types.add(challenge[u"challengeType"])
             self.nb_test += 1
+
+        self.challenge_type_ids = {}
+        for index, challenge_type in enumerate(challenge_types):
+            self.challenge_type_ids[challenge_type] = index
 
         self.log("# traning: %d" % self.nb_training)
         self.log("# test: %d" % self.nb_test)
@@ -131,7 +160,7 @@ class DlData(Data):
 
     def _count_vital_features(self):
         fake_line = {}
-        DlData._fill_line(fake_line, self.db.challenges.find()[0])
+        self._fill_line(fake_line, self.db.challenges.find()[0])
 
         return len(fake_line)
 
@@ -139,18 +168,33 @@ class DlData(Data):
         user_win_times = defaultdict(int)
 
         for challenge in Data.training_set(self):
-            user_win_times[get_winner(challenge)] += 1
+            winner = get_winner(challenge)
+            if winner:
+                user_win_times[winner] += 1
 
         self.user_win_times = user_win_times
 
-        self.log("Max win times: %d" % max(user_win_times.values()))
+        max_win_times = 0
+        biggest_winner = None
+
+        for winner in user_win_times:
+            if max_win_times < user_win_times[winner]:
+                max_win_times = user_win_times[winner]
+                biggest_winner = winner
+
+        self.log("Max win times: %d" % max_win_times)
+        self.log("Biggest winner: " + biggest_winner)
 
     def is_challenge_ok(self, challenge):
         ok = Data.is_challenge_ok(self, challenge)
 
-        if ok and self.user_win_times:
-            return (self.user_win_times[get_winner(challenge)] >=
-                    g_config.win_times_threshold)
+        if ok and self.user_win_times is not None:
+            winner = get_winner(challenge)
+            if winner is None:
+                return False
+            else:
+                return (self.user_win_times[winner] >=
+                        g_config.win_times_threshold)
         else:
             return ok
 
@@ -173,6 +217,7 @@ class DlData(Data):
                 assert m[index, ptcat_index(tech)] == 1
 
             winner = get_winner(challenge)
+            assert winner is not None
 
             assert m[index, -1] == self.user_ids[winner]
             assert self.user_win_times[winner] >= g_config.win_times_threshold
@@ -181,8 +226,7 @@ class DlData(Data):
             if count == 0:
                 break
 
-    @staticmethod
-    def _fill_line(line, challenge):
+    def _fill_line(self, line, challenge):
         index = 0
 
         # First prize
@@ -207,8 +251,9 @@ class DlData(Data):
             line[index] = 1
             index += 1
 
-            # TODO: Challenge type (F2F, ...)
-            line[index] = 1
+        # Challenge type (F2F, ...)
+        if len(g_config.challenge_types_whitelist) != 1:
+            line[index] = self.challenge_type_ids[challenge[u"challengeType"]]
             index += 1
 
         # Appeals duration in days
@@ -227,7 +272,7 @@ class DlData(Data):
 
         for index, challenge in enumerate(iterator(self)):
             line = m[index]
-            DlData._fill_line(line, challenge)
+            self._fill_line(line, challenge)
 
             for plat in challenge[u"platforms"]:
                 line[ptcat_index(plat)] = 1

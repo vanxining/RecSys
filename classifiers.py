@@ -38,7 +38,7 @@ def recommend(proba):
     pairs.sort(key=lambda pair: pair[1], reverse=True)
 
     rec = []
-    for i in xrange(g_config.topn):
+    for i in xrange(min(g_config.topn, len(proba) / 2)):
         rec.append(pairs[i][0])
 
     return rec

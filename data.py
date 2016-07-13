@@ -125,7 +125,7 @@ class DlData(Data):
         self.log("----------")
 
         self.user_win_times = None
-        self.count_user_win_times()
+        self._count_user_win_times()
 
         self.user_ids = {}
         index = 0
@@ -151,7 +151,7 @@ class DlData(Data):
         for index, challenge_type in enumerate(challenge_types):
             self.challenge_type_ids[challenge_type] = index
 
-        self.log("# traning: %d" % self.nb_training)
+        self.log("# training: %d" % self.nb_training)
         self.log("# test: %d" % self.nb_test)
 
     def log(self, msg):
@@ -164,7 +164,7 @@ class DlData(Data):
 
         return len(fake_line)
 
-    def count_user_win_times(self):
+    def _count_user_win_times(self):
         user_win_times = defaultdict(int)
 
         for challenge in Data.training_set(self):
@@ -173,13 +173,15 @@ class DlData(Data):
                 user_win_times[winner] += 1
 
         self.user_win_times = user_win_times
+        self._output_user_win_times_stats()
 
+    def _output_user_win_times_stats(self):
         max_win_times = 0
         biggest_winner = None
 
-        for winner in user_win_times:
-            if max_win_times < user_win_times[winner]:
-                max_win_times = user_win_times[winner]
+        for winner in self.user_win_times:
+            if max_win_times < self.user_win_times[winner]:
+                max_win_times = self.user_win_times[winner]
                 biggest_winner = winner
 
         self.log("Max win times: %d" % max_win_times)
@@ -188,6 +190,7 @@ class DlData(Data):
     def is_challenge_ok(self, challenge):
         ok = Data.is_challenge_ok(self, challenge)
 
+        # count_user_win_times() refers this function
         if ok and self.user_win_times is not None:
             winner = get_winner(challenge)
             if winner is None:
@@ -260,7 +263,7 @@ class DlData(Data):
         line[index] = _calc_appeals_duration(challenge)
         index += 1
 
-    def generate_matrix(self, nb_rows, iterator):
+    def _generate_matrix(self, nb_rows, iterator):
         nb_vital_features = self._count_vital_features()
         nb_platech = ptcat.get_number_of_platech()
         nb_cols = nb_vital_features + nb_platech + 1
@@ -285,10 +288,10 @@ class DlData(Data):
         return m
 
     def training_set(self):
-        return self.generate_matrix(self.nb_training, Data.training_set)
+        return self._generate_matrix(self.nb_training, Data.training_set)
 
     def test_set(self):
-        return self.generate_matrix(self.nb_test, Data.test_set)
+        return self._generate_matrix(self.nb_test, Data.test_set)
 
 
 def main():

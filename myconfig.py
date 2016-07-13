@@ -11,7 +11,7 @@ class MyConfig(object):
         config = ConfigParser.RawConfigParser()
 
         with open(fname, "r") as inf:
-            self.raw = inf.read()
+            self.raw = inf.read().strip()
             inf.seek(0)
             config.readfp(inf, fname)
 

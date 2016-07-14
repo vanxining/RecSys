@@ -2,9 +2,6 @@
 
 from StringIO import StringIO
 
-from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model import LogisticRegression
-
 import myconfig
 import datasets
 
@@ -21,10 +18,16 @@ class Config(myconfig.MyConfig):
 
     def create_classifier(self):
         if self.classifier == "NB":
+            from sklearn.naive_bayes import GaussianNB
             return GaussianNB()
 
         if self.classifier == "LR":
+            from sklearn.linear_model import LogisticRegression
             return LogisticRegression()
+
+        if self.classifier == "MLP":
+            from mlp import MLP
+            return MLP()
 
 
 g_config = Config()

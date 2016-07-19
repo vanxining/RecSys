@@ -44,6 +44,9 @@ def output_result(classifier, nb_test, nb_correct):
     sio.write("# Correct: %d\n" % nb_correct)
     sio.write("%g%%" % (float(nb_correct) / nb_test * 100))
 
+    if g_config.classifier == "MLP":
+        print("")
+
     print(sio.getvalue())
 
     ts = get_current_timestamp()

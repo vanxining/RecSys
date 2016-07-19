@@ -38,12 +38,12 @@ class MLP(Sequential):
         self.add(Activation("softmax"))
 
         sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-        self.compile(loss="categorical_crossentropy", optimizer=sgd)
+        self.compile(loss="categorical_crossentropy", optimizer=sgd,
+                     metrics=["accuracy"])
 
         super(MLP, self).fit(X, y,
                              nb_epoch=20,
-                             batch_size=16,
-                             show_accuracy=True)
+                             batch_size=16)
 
     def predict_proba(self, X):
         return super(MLP, self).predict_proba(X, batch_size=16)

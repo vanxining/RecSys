@@ -1,36 +1,24 @@
 #!/usr/bin/env python2
 
 from StringIO import StringIO
+from myconfig import get_current_timestamp
 
-import myconfig
 import datasets
+import config.classifiers as g_config
 
 
-class Config(myconfig.MyConfig):
-    def __init__(self):
-        super(Config, self).__init__()
-        config = self.open("config/classifiers.ini")
+def _create_classifier():
+    if g_config.classifier == "NB":
+        from sklearn.naive_bayes import GaussianNB
+        return GaussianNB()
 
-        self.topn = config.getint("default", "topn")
-        self.normalize_dataset = config.getboolean("default",
-                                                   "normalize_dataset")
-        self.classifier = config.get("default", "classifier")
+    if g_config.classifier == "LR":
+        from sklearn.linear_model import LogisticRegression
+        return LogisticRegression()
 
-    def create_classifier(self):
-        if self.classifier == "NB":
-            from sklearn.naive_bayes import GaussianNB
-            return GaussianNB()
-
-        if self.classifier == "LR":
-            from sklearn.linear_model import LogisticRegression
-            return LogisticRegression()
-
-        if self.classifier == "MLP":
-            from mlp import MLP
-            return MLP()
-
-
-g_config = Config()
+    if g_config.classifier == "MLP":
+        from mlp import MLP
+        return MLP()
 
 
 def recommend(proba):
@@ -58,9 +46,9 @@ def output_result(classifier, nb_test, nb_correct):
 
     print(sio.getvalue())
 
-    ts = myconfig.get_current_timestamp()
-    with open("results/%s-classifiers-%s.log" % (ts, g_config.classifier),
-              "w") as outf:
+    ts = get_current_timestamp()
+    fpath = "results/%s-classifiers-%s.log" % (ts, g_config.classifier)
+    with open(fpath, "w") as outf:
         outf.write(sio.getvalue())
 
 
@@ -81,7 +69,7 @@ def run(classifier, dataset):
 
 def main():
     dataset = datasets.topcoder(normalize=g_config.normalize_dataset)
-    run(g_config.create_classifier(), dataset)
+    run(_create_classifier(), dataset)
 
 
 if __name__ == "__main__":

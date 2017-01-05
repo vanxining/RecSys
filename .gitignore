@@ -1,8 +1,11 @@
-.idea
+*.iml
+.idea/workspace.xml
+.idea/misc.xml
+.idea/modules.xml
+
 results
 premake
 build
-obj
 
 *.swp
 *.so
@@ -10,7 +13,6 @@ obj
 *.pyd
 *.exp
 *.lib
-*.pdb
 *.ini
 config/*.py
 *.txt

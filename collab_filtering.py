@@ -11,6 +11,7 @@ import pymongo
 import numpy as np
 
 import myconfig
+# noinspection PyUnresolvedReferences
 import sim
 
 

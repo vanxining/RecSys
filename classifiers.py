@@ -41,7 +41,7 @@ def output_result(classifier, nb_test, nb_correct):
     sio.write(str(type(classifier)) + "\n")
     sio.write(g_config.raw.strip() + "\n")
     sio.write("----------\n")
-    sio.write("# Correct: %d\n" % nb_correct)
+    sio.write("# Correct: %d/%d\n" % (nb_correct, nb_test))
     sio.write("%g%%" % (float(nb_correct) / nb_test * 100))
 
     if g_config.classifier == "MLP":

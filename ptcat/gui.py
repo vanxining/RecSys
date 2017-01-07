@@ -3,23 +3,26 @@
 import os
 import sys
 
-sys.path = [os.environ["PYWX"],] + sys.path
+sys.path += os.environ["PYWX"].split(';')
+# noinspection PyUnresolvedReferences
 import wx
 
 
+# noinspection PyMethodMayBeStatic
 class App(wx.PyApp):
     def __init__(self):
         wx.PyApp.__init__(self)
+        wx.SetProcessDPIAware()
         self._BootstrapApp()
-        self.win = None
 
     def OnInit(self):
-        self.win = MyFrame()
-        self.win.Show()
+        win = MyFrame()
+        win.Show()
 
         return True
 
 
+# noinspection PyUnusedLocal
 class MyFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, wx.ID_ANY, u"Platform and technology categorizer",
@@ -29,9 +32,9 @@ class MyFrame(wx.Frame):
         self.SetSize(int(usable.width * 0.5), int(usable.height * 0.75))
         self.Centre(wx.BOTH)
 
-        wx.PyBind(self, wx.EVT_CLOSE_WINDOW, self.OnClose)
-        wx.PyBind(self, wx.EVT_PAINT, self.OnPaint)
-        wx.PyBind(self, wx.EVT_KEY_UP, self.OnKeyUp)
+        self.Bind(wx.EVT_CLOSE_WINDOW, self.OnClose)
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
 
         self.platech = []
         for line in open("platech.txt"):

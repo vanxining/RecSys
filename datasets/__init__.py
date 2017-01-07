@@ -13,11 +13,11 @@ def _normalize(matrix_2d):
     return matrix_2d / matrix_2d.max(axis=0)
 
 
-def topcoder(normalize):
+def load_dataset(name, normalize):
     dtype = np.float if normalize else np.uint16
 
-    training = np.loadtxt("datasets/training.txt", dtype=dtype)
-    test = np.loadtxt("datasets/test.txt", dtype=dtype)
+    training = np.loadtxt("datasets/training_%s.txt" % name, dtype=dtype)
+    test = np.loadtxt("datasets/test_%s.txt" % name, dtype=dtype)
 
     dataset = Dataset()
     dataset.X_train = training[:, :-1]

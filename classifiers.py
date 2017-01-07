@@ -71,7 +71,9 @@ def run(classifier, dataset):
 
 
 def main():
-    dataset = datasets.topcoder(normalize=g_config.normalize_dataset)
+    dataset = datasets.load_dataset(g_config.dataset,
+                                    g_config.normalize_dataset)
+
     run(_create_classifier(), dataset)
 
 

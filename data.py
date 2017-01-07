@@ -303,8 +303,8 @@ def main():
     test_set = data.test_set()
     data.validate_matrix(test_set, Data.test_set)
 
-    np.savetxt("datasets/training.txt", training_set, fmt="%d")
-    np.savetxt("datasets/test.txt", test_set, fmt="%d")
+    np.savetxt("datasets/training_topcoder.txt", training_set, fmt="%d")
+    np.savetxt("datasets/test_topcoder.txt", test_set, fmt="%d")
 
     data.log("# distinct developers: %d" % len(data.user_ids))
     data.log("DONE!")

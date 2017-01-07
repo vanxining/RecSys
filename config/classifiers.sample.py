@@ -8,6 +8,7 @@ raw = raw[raw.index("topn" + " "):]
 # "topn" **MUST** be the first attribute
 
 topn = 30
+dataset = "topcoder"
 normalize_dataset = False
 
 # NB, LR, MLP

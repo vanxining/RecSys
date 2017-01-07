@@ -1,4 +1,3 @@
-
 path = __file__
 if path[-1] == 'c':
     path = path[:-1]

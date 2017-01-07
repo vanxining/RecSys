@@ -1,4 +1,3 @@
-
 import ConfigParser
 from datetime import datetime
 

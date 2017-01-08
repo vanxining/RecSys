@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 
+import numpy
 from StringIO import StringIO
 from myconfig import get_current_timestamp
 
@@ -57,7 +58,9 @@ def output_result(classifier, nb_test, nb_correct):
 
 def run(classifier, dataset):
     classifier.fit(dataset.X_train, dataset.y_train)
-    proba = classifier.predict_proba(dataset.X_test)
+
+    with numpy.errstate(over="ignore"):
+        proba = classifier.predict_proba(dataset.X_test)
 
     nb_correct = 0
 

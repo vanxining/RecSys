@@ -16,6 +16,7 @@ build
 *.ini
 config/*.py
 *.txt
+datasets/*sqlite*
 test.py
 Thumbs.db
 

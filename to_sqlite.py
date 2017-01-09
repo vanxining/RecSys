@@ -1,7 +1,8 @@
 #!/usr/bin/env python2
 
-import pymongo
 import sqlite3
+
+import pymongo
 
 
 mclient = pymongo.MongoClient()

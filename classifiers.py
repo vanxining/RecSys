@@ -1,11 +1,12 @@
 #!/usr/bin/env python2
 
-import numpy
 from StringIO import StringIO
-from myconfig import get_current_timestamp
 
-import datasets
+import numpy
+
 import config.classifiers as g_config
+import datasets
+import myconfig
 
 
 def _create_classifier():
@@ -50,8 +51,11 @@ def output_result(classifier, nb_test, nb_correct):
 
     print(sio.getvalue())
 
-    ts = get_current_timestamp()
-    fpath = "results/%s-classifiers-%s.log" % (ts, g_config.classifier)
+    fpath = "results/%s-classifiers-%s-%s.log" % (
+        myconfig.get_current_timestamp(),
+        g_config.dataset,
+        g_config.classifier,
+    )
     with open(fpath, "w") as outf:
         outf.write(sio.getvalue())
 

@@ -1,13 +1,12 @@
 #!/usr/bin/env python2
 
-import StringIO
-
 from datetime import datetime
 from collections import defaultdict
 
 import pymongo
 import numpy as np
 
+import logger
 import myconfig
 import ptcat
 
@@ -119,10 +118,10 @@ class DlData(Data):
     def __init__(self):
         Data.__init__(self)
 
-        self.sio = StringIO.StringIO()
+        self.logger = logger.Logger()
 
-        self.log(g_config.raw)
-        self.log("----------")
+        self.logger.log(g_config.raw)
+        self.logger.log("----------")
 
         self.user_win_times = None
         self._count_user_win_times()
@@ -151,12 +150,8 @@ class DlData(Data):
         for index, challenge_type in enumerate(challenge_types):
             self.challenge_type_ids[challenge_type] = index
 
-        self.log("# training: %d" % self.nb_training)
-        self.log("# test: %d" % self.nb_test)
-
-    def log(self, msg):
-        print(msg)
-        self.sio.write(msg + "\n")
+        self.logger.log("Training set size: %d" % self.nb_training)
+        self.logger.log("Test set size: %d" % self.nb_test)
 
     def _count_vital_features(self):
         fake_line = {}
@@ -184,8 +179,8 @@ class DlData(Data):
                 max_win_times = self.user_win_times[winner]
                 biggest_winner = winner
 
-        self.log("Max win times: %d" % max_win_times)
-        self.log("Biggest winner: " + biggest_winner)
+        self.logger.log("Max win times: %d" % max_win_times)
+        self.logger.log("Biggest winner: " + biggest_winner)
 
     def is_challenge_ok(self, challenge):
         ok = Data.is_challenge_ok(self, challenge)
@@ -201,7 +196,7 @@ class DlData(Data):
         else:
             return ok
 
-    def validate_matrix(self, m, iterator):
+    def _validate_matrix(self, m, iterator):
         nb_vital_features = self._count_vital_features()
 
         def ptcat_index(platech):
@@ -293,25 +288,25 @@ class DlData(Data):
     def test_set(self):
         return self._generate_matrix(self.nb_test, Data.test_set)
 
+    def generate(self):
+        training_set = self.training_set()
+        self._validate_matrix(training_set, Data.training_set)
+
+        test_set = self.test_set()
+        self._validate_matrix(test_set, Data.test_set)
+
+        np.savetxt("datasets/training_topcoder.txt", training_set, fmt="%d")
+        np.savetxt("datasets/test_topcoder.txt", test_set, fmt="%d")
+
+        self.logger.log("# distinct developers: %d" % len(self.user_ids))
+        self.logger.log("DONE!")
+
+        self.logger.save("topcoder-dataset")
+
 
 def main():
     data = DlData()
-
-    training_set = data.training_set()
-    data.validate_matrix(training_set, Data.training_set)
-
-    test_set = data.test_set()
-    data.validate_matrix(test_set, Data.test_set)
-
-    np.savetxt("datasets/training_topcoder.txt", training_set, fmt="%d")
-    np.savetxt("datasets/test_topcoder.txt", test_set, fmt="%d")
-
-    data.log("# distinct developers: %d" % len(data.user_ids))
-    data.log("DONE!")
-
-    ts = myconfig.get_current_timestamp()
-    with open("results/%s-dataset.log" % ts, "w") as outf:
-        outf.write(data.sio.getvalue())
+    data.generate()
 
 
 if __name__ == "__main__":

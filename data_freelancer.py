@@ -4,6 +4,7 @@ from collections import defaultdict
 import sqlite3
 
 import config.data_freelancer as data_config
+import logger
 
 
 ID = 0
@@ -18,6 +19,8 @@ WINNER = 7
 
 class Data(object):
     def __init__(self):
+        self.logger = logger.Logger()
+
         self.con = sqlite3.connect("datasets/freelancer.sqlite")
         self.cursor = self.con.cursor()
 
@@ -63,9 +66,9 @@ class Data(object):
         self.cursor.execute(query)
         count = self._save("training", self.cursor.fetchall())
 
-        print "# technologies:", len(self.technologies)
-        print "Training set size:", count
-        print "Max win times:", max(win_times.values())
+        self.logger.log("# technologies: %d" % len(self.technologies))
+        self.logger.log("Max win times: %d" % max(win_times.values()))
+        self.logger.log("Training set size: %d" % count)
 
     def extract_test_set(self):
         query = '''SELECT * FROM "projects"
@@ -99,7 +102,7 @@ class Data(object):
 
         self._save("test", projects)
 
-        print "Test set size:", len(projects)
+        self.logger.log("Test set size: %d" % len(projects))
 
     def _save(self, fname, iterable):
         ts = set()
@@ -134,8 +137,16 @@ class Data(object):
 
         return count
 
+    def generate(self):
+        self.logger.log(data_config.raw)
+        self.logger.log("----------")
+
+        self.extract_training_set()
+        self.extract_test_set()
+
+        self.logger.save("freelancer-dataset")
+
 
 if __name__ == "__main__":
     data = Data()
-    data.extract_training_set()
-    data.extract_test_set()
+    data.generate()

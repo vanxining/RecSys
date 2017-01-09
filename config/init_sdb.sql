@@ -7,3 +7,8 @@ CREATE TABLE IF NOT EXISTS "projects"
      "technologies" TEXT NOT NULL ,       -- 5
      "developers" TEXT NOT NULL ,         -- 6
      "winner" INTEGER NOT NULL );         -- 7
+
+DROP TABLE IF EXISTS "dev_ratings";
+CREATE TABLE "dev_ratings"
+    ("uid" INTEGER PRIMARY KEY  NOT NULL ,
+     "rating" FLOAT NOT NULL );

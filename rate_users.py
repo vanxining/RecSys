@@ -18,7 +18,7 @@ INS_QUERY = '''INSERT INTO "dev_ratings" ("uid","rating") VALUES (?,?)'''
 
 
 def init_db():
-    scon.executescript(open("config/init_sdb.sql").read())
+    scon.executescript(open("config/fl_dev_rating.sql").read())
 
 
 def _log(num):

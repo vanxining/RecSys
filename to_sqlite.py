@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 
+from collections import namedtuple
 import sqlite3
 
 import pymongo
@@ -25,6 +26,9 @@ def init_db():
 def project_exists(pid):
     sc.execute(EXISTS_QUERY, (pid,))
     return sc.fetchone() is not None
+
+
+Bid = namedtuple("Bid", ("dev", "date",))
 
 
 def to_sqlite3():
@@ -53,13 +57,20 @@ def to_sqlite3():
             for tech in project["jobs"]:
                 technologies += str(tech["id"]) + ' '
 
-            developers = ""
+            bids = []
             winner = -1
+
             for bid in project["result"]["bids"]:
-                developers += str(bid["users_id"]) + ' '
+                bids.append(Bid(str(bid["users_id"]), int(bid["submitdate_ts"])))
 
                 if "is_awarded" in bid and bid["is_awarded"]:
-                    winner = int(bid["users_id"])
+                    winner = bids[-1].dev
+
+            bids.sort(key=lambda b: b.date)
+
+            developers = ""
+            for bid in bids:
+                developers += bid.dev + ' '
 
             if winner != -1:
                 bmin = project["budget"]["minimum"]

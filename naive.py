@@ -51,7 +51,7 @@ def predict():
                 all_users_rated = False
                 break
 
-            devs[i].rating = row[0]
+            devs[i].rating = row[0] + g_config.order_factor / (i + 1)
 
         if not all_users_rated:
             continue

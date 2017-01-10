@@ -62,6 +62,8 @@ def recommend(proba):
 
             update_ratings(candidates)
 
+            pairs = pairs[:nb_intact] + candidates
+
     rec = []
     for dev in pairs[:nb_rec]:
         rec.append(dev[0])

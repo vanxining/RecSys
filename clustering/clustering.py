@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
-import pymongo
 import numpy as np
+import pymongo
 from sklearn.cluster import KMeans
 
 
@@ -25,16 +25,18 @@ def extract_all():
     for index, key in enumerate(platec):
         platec[key] = index
 
+    print("# platforms and technologies: %d" % len(platec))
+    print("# challenges: %d" % nb_challenges)
+
     return platec, nb_challenges
 
 
-def platforms_and_technologies():
+def calc_platec_affinity():
     platec, _ = extract_all()
     affinity = np.zeros((len(platec), len(platec)), dtype=np.uint8)
+    s = set()
 
     for challenge in db.challenges.find():
-        s = set()
-
         for plat in challenge["platforms"]:
             s.add(plat.lower())
 
@@ -47,7 +49,8 @@ def platforms_and_technologies():
                     continue
 
                 affinity[platec[x], platec[y]] += 1
-                affinity[platec[y], platec[x]] += 1
+
+        s.clear()
 
     return affinity
 
@@ -67,14 +70,20 @@ def scikit_learn_format():
 
 
 def cluster():
-    estimator = KMeans(n_clusters=8)
+    estimator = KMeans(n_clusters=10)
     data = scikit_learn_format()
+
     labels = estimator.fit_predict(data)
     print labels
+
+
+def main():
+    cluster()
     quit()
+
+    affinity = calc_platec_affinity()
+    print affinity[0]
 
 
 if __name__ == "__main__":
-    cluster()
-    print platforms_and_technologies()
-
+    main()

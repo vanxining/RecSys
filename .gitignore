@@ -17,6 +17,7 @@ build
 config/*.py
 *.txt
 datasets/*sqlite*
+datasets/dev_mappings_*.py
 test.py
 Thumbs.db
 

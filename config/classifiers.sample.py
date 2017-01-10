@@ -1,15 +1,19 @@
-path = __file__
-if path[-1] == 'c':
-    path = path[:-1]
+import util
 
-raw = open(path).read().strip()
-raw = raw[raw.index("topn" + " "):]
 
-# "topn" **MUST** be the first attribute
+raw = util.get_py_config_file_content(__file__)
 
-topn = 30
+# "_config" **MUST** be the first attribute
+
+_config = "classifiers"
+
 dataset = "topcoder"
 normalize_dataset = False
+
+topn = 30
+
+adjust_rec_list = True
+rec_list_intact_length = 5
 
 # NB, LR, MLP
 classifier = "LR"

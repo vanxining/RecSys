@@ -137,12 +137,28 @@ class Data(object):
 
         return count
 
+    def _save_developer_mappings(self):
+        with open("datasets/dev_mappings_freelancer.py", 'w') as outf:
+            outf.write("devs = (\n")
+
+            mappings = [0] * len(self.winners)
+
+            for dev, nindex in self.winners.iteritems():
+                mappings[nindex] = dev
+
+            for dev in mappings:
+                outf.write("    %d,\n" % dev)
+
+            outf.write(")\n")
+
     def generate(self):
         self.logger.log(data_config.raw)
         self.logger.log("----------")
 
         self.extract_training_set()
         self.extract_test_set()
+
+        self._save_developer_mappings()
 
         self.logger.save("freelancer-dataset")
 

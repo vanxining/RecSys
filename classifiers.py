@@ -23,16 +23,48 @@ def _create_classifier():
         return MLP()
 
 
+def update_ratings(devs):
+    if g_config.dataset != "freelancer":
+        return
+
+    import datasets.dev_mappings_freelancer as mappings
+
+    import sqlite3
+    conn = sqlite3.connect("datasets/freelancer.sqlite")
+    cursor = conn.cursor()
+
+    for dev in devs:
+        cursor.execute('SELECT "rating" FROM "dev_ratings" WHERE "uid" = %d' %
+                        mappings.devs[dev[0]])
+        row = cursor.fetchone()
+        if row is None:
+            return
+
+        dev[1] = row[0]
+
+    devs.sort(key=lambda d: d[1], reverse=True)
+
+
 def recommend(proba):
     pairs = []
     for index, p in enumerate(proba):
-        pairs.append((index, p))
+        pairs.append([index, p])
 
     pairs.sort(key=lambda pair: pair[1], reverse=True)
 
+    nb_rec = min(g_config.topn, len(proba) / 2)
+
+    if g_config.adjust_rec_list:
+        nb_intact = g_config.rec_list_intact_length
+        if nb_intact < nb_rec:
+            nb_candidates = (nb_rec - nb_intact) * 2
+            candidates = pairs[nb_intact:(nb_intact + nb_candidates)]
+
+            update_ratings(candidates)
+
     rec = []
-    for i in xrange(min(g_config.topn, len(proba) / 2)):
-        rec.append(pairs[i][0])
+    for dev in pairs[:nb_rec]:
+        rec.append(dev[0])
 
     return rec
 

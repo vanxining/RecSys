@@ -19,7 +19,7 @@ VALUES (?,?,?,?,?,?,?,?)'''
 
 
 def init_db():
-    scon.executescript(open("config/init_sdb.sql").read())
+    scon.executescript(open("config/fl_projects.sql").read())
 
 
 def project_exists(pid):

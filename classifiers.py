@@ -25,7 +25,7 @@ def _create_classifier():
 
 def update_ratings(devs):
     if g_config.dataset != "freelancer":
-        return
+        return False
 
     import datasets.dev_mappings_freelancer as mappings
 
@@ -44,6 +44,8 @@ def update_ratings(devs):
 
     devs.sort(key=lambda d: d[1], reverse=True)
 
+    return True
+
 
 def recommend(proba):
     pairs = []
@@ -60,9 +62,8 @@ def recommend(proba):
             nb_candidates = (nb_rec - nb_intact) * 2
             candidates = pairs[nb_intact:(nb_intact + nb_candidates)]
 
-            update_ratings(candidates)
-
-            pairs = pairs[:nb_intact] + candidates
+            if update_ratings(candidates):
+                pairs = pairs[:nb_intact] + candidates
 
     rec = []
     for dev in pairs[:nb_rec]:

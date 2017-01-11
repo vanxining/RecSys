@@ -64,13 +64,10 @@ def predict():
 
         for dev in hightest:
             if dev.uid == project[WINNER]:
-                print "Correct"
-
                 correct = True
                 nb_correct += 1
 
-        if not correct:
-            print "Wrong"
+                break
 
     logger.log("# projects: %d" % nb_projects)
     logger.log("# correct: %d" % nb_correct)

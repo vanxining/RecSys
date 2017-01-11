@@ -71,6 +71,9 @@ def recommend(proba):
 
 
 def output_result(classifier, nb_test, nb_correct, diversity):
+    if g_config.classifier == "MLP":
+        print("\n")
+
     logger = Logger()
 
     logger.log(str(type(classifier)))

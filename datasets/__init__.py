@@ -7,6 +7,7 @@ class Dataset(object):
         self.y_train = None
         self.X_test = None
         self.y_test = None
+        self.labels = None
 
 
 def _normalize(matrix_2d):
@@ -24,6 +25,7 @@ def load_dataset(name, normalize):
     dataset.y_train = training[:, -1]
     dataset.X_test = test[:, :-1]
     dataset.y_test = test[:, -1]
+    dataset.labels = set(dataset.y_train)
 
     if normalize:
         dataset.X_train = _normalize(dataset.X_train)

@@ -70,14 +70,15 @@ def recommend(proba):
     return rec
 
 
-def output_result(classifier, nb_test, nb_correct):
+def output_result(classifier, nb_test, nb_correct, diversity):
     logger = Logger()
 
     logger.log(str(type(classifier)))
     logger.log(g_config.raw)
     logger.log("----------")
     logger.log("# correct: %d/%d" % (nb_correct, nb_test))
-    logger.log("%g%%" % (float(nb_correct) / nb_test * 100))
+    logger.log("Accuracy rate: %g%%" % (float(nb_correct) / nb_test * 100))
+    logger.log("Diversity: %g%%" % diversity)
 
     fname = "classifiers-%s-%s" % (g_config.dataset, g_config.classifier)
     logger.save(fname)
@@ -89,15 +90,20 @@ def run(classifier, dataset):
     with numpy.errstate(over="ignore"):
         proba = classifier.predict_proba(dataset.X_test)
 
+    lucky = set()
     nb_correct = 0
 
     for p, real in zip(proba, dataset.y_test):
         rec_list = recommend(p)
+        lucky.update(rec_list)
 
         if real in rec_list:
             nb_correct += 1
 
-    output_result(classifier, len(dataset.y_test), nb_correct)
+    output_result(classifier=classifier,
+                  nb_test=len(dataset.y_test),
+                  nb_correct=nb_correct,
+                  diversity=len(lucky) / float(len(dataset.labels)))
 
 
 def main():

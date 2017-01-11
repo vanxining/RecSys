@@ -45,6 +45,11 @@ class Data(object):
 
             win_times[project[WINNER]] += 1
 
+        nb_win_once = 0
+        for winner, times in win_times.iteritems():
+            if times == 1:
+                nb_win_once += 1
+
         for winner, times in win_times.iteritems():
             if times >= data_config.win_times_threshold:
                 if winner not in self.winners:
@@ -67,6 +72,9 @@ class Data(object):
         count = self._save("training", self.cursor.fetchall())
 
         self.logger.log("# technologies: %d" % len(self.technologies))
+        self.logger.log("# winning only once: %d/%d (%g%%)" % (
+            nb_win_once, len(win_times), nb_win_once / float(len(win_times)) * 100,
+        ))
         self.logger.log("Max win times: %d" % max(win_times.values()))
         self.logger.log("Training set size: %d" % count)
 

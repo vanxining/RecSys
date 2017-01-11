@@ -1,12 +1,10 @@
 #!/usr/bin/env python2
 
-from StringIO import StringIO
-
 import numpy
 
 import config.classifiers as g_config
 import datasets
-import myconfig
+from logger import Logger
 
 
 def _create_classifier():
@@ -73,26 +71,16 @@ def recommend(proba):
 
 
 def output_result(classifier, nb_test, nb_correct):
-    sio = StringIO()
+    logger = Logger()
 
-    sio.write(str(type(classifier)) + "\n")
-    sio.write(g_config.raw.strip() + "\n")
-    sio.write("----------\n")
-    sio.write("# Correct: %d/%d\n" % (nb_correct, nb_test))
-    sio.write("%g%%" % (float(nb_correct) / nb_test * 100))
+    logger.log(str(type(classifier)))
+    logger.log(g_config.raw)
+    logger.log("----------")
+    logger.log("# correct: %d/%d" % (nb_correct, nb_test))
+    logger.log("%g%%" % (float(nb_correct) / nb_test * 100))
 
-    if g_config.classifier == "MLP":
-        print("")
-
-    print(sio.getvalue())
-
-    fpath = "results/%s-classifiers-%s-%s.log" % (
-        myconfig.get_current_timestamp(),
-        g_config.dataset,
-        g_config.classifier,
-    )
-    with open(fpath, "w") as outf:
-        outf.write(sio.getvalue())
+    fname = "classifiers-%s-%s" % (g_config.dataset, g_config.classifier)
+    logger.save(fname)
 
 
 def run(classifier, dataset):

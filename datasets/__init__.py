@@ -11,7 +11,14 @@ class Dataset(object):
 
 
 def _normalize(matrix_2d):
-    return matrix_2d / matrix_2d.max(axis=0)
+    # Collapse the rows (axis=0)
+    m = matrix_2d.max(axis=0)
+
+    for i in xrange(m.shape[0]):
+        if m[i] <= 1.0:
+            m[i] = 1.0
+
+    return matrix_2d / m
 
 
 def load_dataset(name, normalize):

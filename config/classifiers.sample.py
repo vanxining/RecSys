@@ -18,5 +18,7 @@ rec_list_intact_length = 10
 # NB, LR, MLP
 classifier = "LR"
 
-if classifier == "MLP":
+if classifier == "NB":
+    normalize_dataset = False
+elif classifier == "MLP":
     normalize_dataset = True

@@ -10,10 +10,10 @@ _config = "classifiers"
 dataset = "topcoder"
 normalize_dataset = False
 
-topn = 30
+topn = 20
 
-adjust_rec_list = True
-rec_list_intact_length = 5
+adjust_rec_list = False
+rec_list_intact_length = 10
 
 # NB, LR, MLP
 classifier = "LR"

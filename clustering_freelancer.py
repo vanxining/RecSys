@@ -3,7 +3,6 @@
 import sqlite3
 
 import numpy as np
-from sklearn.cluster import KMeans
 
 import config.clustering as g_config
 from logger import Logger
@@ -36,9 +35,9 @@ def index_technologies():
     return technologies, nb_projects
 
 
-def scikit_learn_format():
+def scikit_learn_format(dtype=np.uint8):
     technologies, nb_projects = index_technologies()
-    data = np.zeros((nb_projects, len(technologies)), dtype=np.uint8)
+    data = np.zeros((nb_projects, len(technologies)), dtype=dtype)
 
     cursor.execute(SEL_PROJECTS_QUERY % g_config.fl_projects_limit)
     for index, row in enumerate(cursor.fetchall()):
@@ -48,11 +47,47 @@ def scikit_learn_format():
     return np.transpose(data)
 
 
-def cluster():
-    estimator = KMeans(n_clusters=g_config.nb_fl_clusters)
-    data = scikit_learn_format()
+def distance_matrix(dtype=np.uint32):
+    tech_indices, _ = index_technologies()
+    data = np.zeros((len(tech_indices), len(tech_indices)), dtype=dtype)
 
-    labels = estimator.fit_predict(data)
+    cursor.execute(SEL_PROJECTS_QUERY % g_config.fl_projects_limit)
+    for row in cursor.fetchall():
+        technologies = [tech_indices[int(tech)] for tech in row[0].split(' ')]
+
+        for x in technologies:
+            for y in technologies:
+                if x == y:
+                    continue
+
+                data[x, y] += 1
+
+    max_element = data.max(axis=(0, 1))
+    data = max_element - data
+
+    return data, max_element
+
+
+def kmeans():
+    from sklearn.cluster import KMeans
+
+    estimator = KMeans(n_clusters=g_config.nb_fl_clusters)
+    return estimator.fit_predict(scikit_learn_format())
+
+
+def dbscan():
+    from sklearn.cluster import DBSCAN
+
+    data, max_element = distance_matrix()
+
+    db = DBSCAN(eps=(max_element - 1), min_samples=10, metric="precomputed")
+    db.fit(data)
+
+    return db.labels_
+
+
+def cluster():
+    labels = globals()[g_config.fl_clustering_algorithm]()
     print(labels)
 
 

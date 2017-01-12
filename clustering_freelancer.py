@@ -86,6 +86,17 @@ def dbscan():
     return db.labels_
 
 
+def spectral():
+    from sklearn.cluster import SpectralClustering
+
+    data, max_element = distance_matrix()
+
+    s = SpectralClustering(n_clusters=g_config.nb_fl_clusters, affinity="precomputed")
+    s.fit(data)
+
+    return s.labels_
+
+
 def cluster():
     labels = globals()[g_config.fl_clustering_algorithm]()
     print(labels)

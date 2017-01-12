@@ -12,5 +12,5 @@ nb_fl_clusters = 10
 
 fl_projects_limit = 20000
 
-# kmeans, dbscan
-fl_clustering_algorithm = "dbscan"
+# kmeans, dbscan, spectral
+fl_clustering_algorithm = "kmeans"

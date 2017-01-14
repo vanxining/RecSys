@@ -21,5 +21,7 @@ datasets/dev_mappings_*.py
 test.py
 Thumbs.db
 
+console/*.xrc
+
 Makefile
 *.make

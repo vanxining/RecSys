@@ -9,4 +9,6 @@ _config = "naive_predictor"
 
 project_limit = 1000
 topn = 1
-order_factor = 0.0  # > 0: Consider the order of registering
+
+# > 0: Consider the order of registering
+order_factor = 0.0

@@ -35,7 +35,8 @@ class PyConfigFile(object):
             self.fpath = fpath[:-1]
 
         self.lines = []
-        self.attrib = []
+        self.attrib_keys = []
+        self.attrib = {}
 
         for line in open(fpath):
             line = line.rstrip()
@@ -44,22 +45,22 @@ class PyConfigFile(object):
             if line:
                 match = kv_pattern.match(line)
                 if match and match.group(1) not in ("_config", "raw",):
-                    self.attrib.append((match.group(1), AttribValue(match.group(2))))
+                    self.attrib_keys.append(match.group(1))
+                    self.attrib[self.attrib_keys[-1]] = AttribValue(match.group(2))
 
     def sync(self, m):
-        for key, val in self.attrib:
+        for key, val in self.attrib.iteritems():
             val.value = str(getattr(m, key))
 
     def save(self):
-        m = {key: val for key, val in self.attrib}
-
         with open(self.fpath, 'w') as outf:
             for index, line in enumerate(self.lines):
                 if line:
                     match = kv_pattern.match(line)
                     if match:
                         key = match.group(1)
-                        if key in m:
-                            self.lines[index] = key + " = " + m[key]
+                        if key in self.attrib:
+                            line = key + " = " + str(self.attrib[key])
+                            self.lines[index] = line
 
                 outf.write(line + '\n')

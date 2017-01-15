@@ -1,14 +1,41 @@
 # -*- coding: utf-8 -*-
 
+import importlib
+import logging
 import os
+import thread
 import xml.etree.ElementTree as ET
 
-from config.util import PyConfigFile
+from collections import namedtuple
 
 # noinspection PyUnresolvedReferences
-import newevent
-# noinspection PyUnresolvedReferences
 import wx
+# noinspection PyUnresolvedReferences
+import newevent
+
+from config.util import PyConfigFile
+import Logger
+
+
+MyConfigFile = namedtuple("ConfigFile", ("data", "list",))
+(WorkerFinishEvent, EVT_WORKER_FIN) = newevent.NewEvent()
+
+
+class Worker(object):
+    def __init__(self, main_window, runnable, done_listener=None):
+        self.main_window = main_window
+        self.runnable = runnable
+        self.done_listener = done_listener
+
+    def start(self):
+        thread.start_new_thread(self.run, ())
+
+    def run(self):
+        self.runnable()
+
+        event = WorkerFinishEvent()
+        event.done_listener = self.done_listener
+        wx.PostEvent(self.main_window, event)
 
 
 # noinspection PyBroadException,PyUnusedLocal,PyMethodMayBeStatic,PyAttributeOutsideInit
@@ -25,16 +52,26 @@ class MainWindow(wx.Frame):
         self.SetSize(w, h)
         self.Centre(wx.BOTH)
 
+        self.redirector = Logger.MyRedirector(self)
+        self.std_redirector = Logger.RedirectStdStreams(
+            stdout=self.redirector, stderr=self.redirector
+        )
+
+        self.prepare_logger()
+
         self.configs = {}
         self.create_panels()
+
+        self.Bind(EVT_WORKER_FIN, self.on_worker_finished)
+        self.Bind(wx.EVT_CLOSE_WINDOW, self.on_close)
 
     def xrc_load_frame(self):
         res = wx.XmlResource.Get()
         res.InitAllHandlers()
 
-        if res.Load(u"MainWindow.xrc"):
+        if res.Load(u"console/MainWindow.xrc"):
             if res.LoadFrame(self, None, u"main_window"):
-                self.SetIcon(wx.Icon(u"Icon.ico", wx.BITMAP_TYPE_ICO))
+                self.SetIcon(wx.Icon(u"console/Icon.ico", wx.BITMAP_TYPE_ICO))
                 self.xrc_bind()
 
                 return True
@@ -44,7 +81,7 @@ class MainWindow(wx.Frame):
     def xrc_bind(self):
         res = wx.XmlResource.Get()
 
-        raw = open("MainWindow.xrc").read()
+        raw = open("console/MainWindow.xrc").read()
         raw = raw.replace("xmlns", "_xmlns", 1)
 
         from StringIO import StringIO
@@ -91,7 +128,7 @@ class MainWindow(wx.Frame):
     def create_panels(self):
         listctrl_width = -1
 
-        folder = "../config/"
+        folder = "config/"
         for f in os.listdir(folder):
             if ".sample" in f or f in ("__init__.py", "util.py",):
                 continue
@@ -110,17 +147,75 @@ class MainWindow(wx.Frame):
                     listctrl_width = lc.GetSize().GetX()
                     listctrl_width -= wx.SystemSettings.GetMetric(wx.SYS_VSCROLL_X, self)
 
-                lc.AppendColumn(u"Attribute", width=int(listctrl_width * 0.3))
-                lc.AppendColumn(u"Value", width=int(listctrl_width * 0.7))
+                lc.AppendColumn(u"Attribute", width=int(listctrl_width / 2))
+                lc.AppendColumn(u"Value", width=int(listctrl_width / 2))
 
                 config = PyConfigFile(folder + f)
-                self.configs[f] = config
+                my_config = MyConfigFile(config, lc)
+                self.configs[f] = my_config
 
-                for key, val in config.attrib:
+                for key in config.attrib_keys:
                     index = lc.GetItemCount()
                     lc.InsertItem(index, key.decode())
-                    lc.SetItem(index, 1, val.value.decode())
+                    lc.SetItem(index, 1, config.attrib[key].value.decode())
+
+    def prepare_logger(self):
+        self.logger = Logger.ListBoxLogger(self.logger_ctrl)
+        self.Bind(Logger.EVT_LOG, self.on_append_log)
+
+        logging.basicConfig(level=logging.DEBUG,
+                            format="[%(levelname)s] %(message)s",
+                            stream=self.redirector)
+
+        logging.debug("Hello from RecSys!")
+
+    def on_append_log(self, event):
+        self.logger.append(event.log)
+
+    def get_selected_config_file(self):
+        return self.notebook.GetPageText(self.notebook.GetSelection())
 
     def on_item_activated(self, event):
+        fname = self.get_selected_config_file()
+        my_config = self.configs[fname]
+
         index = event.GetIndex()
-        print index
+        key = my_config.list.GetItemText(index, 0)
+        val = my_config.list.GetItemText(index, 1)
+
+        dlg = wx.TextEntryDialog(caption=u"Change `%s`" % key,
+                                 message=key + u" =",
+                                 value=val,
+                                 parent=self)
+        dlg.ShowModal()
+        new_val = dlg.GetValue()
+        dlg.Destroy()
+
+        if new_val:
+            my_config.data.attrib[key].value = new_val
+            my_config.data.save()
+
+            my_config.list.SetItem(index, 1, new_val)
+
+    def on_worker_finished(self, event):
+        pass
+
+    def on_start(self, event):
+        self.logger.clear()
+
+        worker = Worker(self, self.do_start)
+        worker.start()
+
+    def do_start(self):
+        mod_name = self.get_selected_config_file()[:-3]
+
+        try:
+            config_module = importlib.import_module("config." + mod_name)
+            reload(config_module)
+
+            m = importlib.import_module(mod_name)
+            m.main()
+        except:
+            logging.exception("Failed to execute script: %s.py", mod_name)
+
+        self.redirector.flush()

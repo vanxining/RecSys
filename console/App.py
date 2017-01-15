@@ -35,5 +35,7 @@ class App(wx.PyApp):
         return True
 
 
+os.chdir(os.path.abspath(".."))
+
 app = App()
 app.MainLoop()

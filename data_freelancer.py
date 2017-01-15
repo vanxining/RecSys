@@ -171,6 +171,10 @@ class Data(object):
         self.logger.save("freelancer-dataset")
 
 
-if __name__ == "__main__":
+def main():
     data = Data()
     data.generate()
+
+
+if __name__ == "__main__":
+    main()

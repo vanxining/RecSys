@@ -39,5 +39,9 @@ def census(date_from):
         print "  ", ct, challengeTypes[ct]
 
 
-if __name__ == "__main__":
+def main():
     census(datetime(2015, 1, 1))
+
+
+if __name__ == "__main__":
+    main()

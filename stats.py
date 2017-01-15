@@ -46,6 +46,10 @@ def winners():
     print "\nTotal:", len(count), "\n"
 
 
-if __name__ == "__main__":
+def main():
     platforms_and_technologies()
     winners()
+
+
+if __name__ == "__main__":
+    main()

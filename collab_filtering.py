@@ -299,6 +299,8 @@ def main():
 
     stdout.write(sio.getvalue())
 
+    sim.ClearCache()
+
 
 def run_all_tests(cf, first_hour=True):
     for nb in g_config.nb_seeds:
@@ -324,4 +326,3 @@ def run_all_tests(cf, first_hour=True):
 
 if __name__ == "__main__":
     main()
-    sim.ClearCache()

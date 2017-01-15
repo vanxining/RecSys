@@ -97,6 +97,10 @@ def to_sqlite3():
     print "# inserted:", num_inserted
 
 
-if __name__ == "__main__":
+def main():
     init_db()
     to_sqlite3()
+
+
+if __name__ == "__main__":
+    main()

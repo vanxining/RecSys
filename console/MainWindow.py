@@ -183,13 +183,18 @@ class MainWindow(wx.Frame):
         key = my_config.list.GetItemText(index, 0)
         val = my_config.list.GetItemText(index, 1)
 
-        dlg = wx.TextEntryDialog(caption=u"Change `%s`" % key,
-                                 message=key + u" =",
-                                 value=val,
-                                 parent=self)
-        dlg.ShowModal()
-        new_val = dlg.GetValue()
-        dlg.Destroy()
+        if val == u"True":
+            new_val = u"False"
+        elif val == u"False":
+            new_val = u"True"
+        else:
+            dlg = wx.TextEntryDialog(caption=u"Change `%s`" % key,
+                                     message=key + u" =",
+                                     value=val,
+                                     parent=self)
+            dlg.ShowModal()
+            new_val = dlg.GetValue()
+            dlg.Destroy()
 
         if new_val:
             my_config.data.attrib[key].value = new_val

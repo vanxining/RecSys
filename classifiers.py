@@ -81,7 +81,7 @@ def output_result(classifier, nb_test, nb_correct, diversity):
     logger.log("----------")
     logger.log("# correct: %d/%d" % (nb_correct, nb_test))
     logger.log("Accuracy rate: %g%%" % (float(nb_correct) / nb_test * 100))
-    logger.log("Diversity: %g%%" % diversity)
+    logger.log("Diversity: %g%%" % (diversity * 100))
 
     fname = "classifiers-%s-%s" % (g_config.dataset, g_config.classifier)
     logger.save(fname)

@@ -7,43 +7,13 @@ import pymongo
 import numpy as np
 
 import logger
-import myconfig
 import ptcat
+
+import config.data as g_config
 
 
 def cmp_datetime(a, b):
     return -1 if a < b else 1 if a > b else 0
-
-
-class Config(myconfig.MyConfig):
-    def __init__(self):
-        super(Config, self).__init__()
-        config = self.open("config/data.ini")
-
-        self.year_from = config.getint("default", "year_from")
-        self.end_date = myconfig.parse_date(config.get("default", "end_date"))
-
-        self.win_times_threshold = config.getint("default",
-                                                 "win_times_threshold")
-
-        whitelist = config.get("default", "challenge_types_whitelist").strip()
-        if whitelist == "*":
-            self.challenge_types_whitelist = ()
-        else:
-            whitelist = whitelist.replace(", ", ",")
-            while len(whitelist) > 0 and whitelist[-1] == ',':
-                whitelist = whitelist[:-1]
-
-            self.challenge_types_whitelist = set(whitelist.split(','))
-
-    def is_challenge_type_ok(self, challenge_type):
-        if len(self.challenge_types_whitelist) == 0:
-            return True
-
-        return challenge_type in self.challenge_types_whitelist
-
-
-g_config = Config()
 
 
 class Data(object):

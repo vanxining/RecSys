@@ -10,9 +10,10 @@ from collections import namedtuple, defaultdict
 import pymongo
 import numpy as np
 
-import myconfig
 # noinspection PyUnresolvedReferences
 import sim
+
+import config.collab_filtering as g_config
 
 
 Result = namedtuple("Result", ("name", "num_real", "accuracy", "recall"))
@@ -21,23 +22,6 @@ TestRound = namedtuple("TestRound", ("time", "accuracy", "recall", "diversity"))
 
 def cmp_datetime(a, b):
     return -1 if a < b else 1 if a > b else 0
-
-
-class Config(myconfig.MyConfig):
-    def __init__(self):
-        super(Config, self).__init__()
-        config = self.open("config/collab_filtering.ini")
-
-        nb_seeds = config.get("default", "nb_seeds").split(',')
-        self.nb_seeds = [int(n) if '.' not in n else float(n) for n in nb_seeds]
-
-        self.year_from = config.getint("default", "year_from")
-        self.end_date = myconfig.parse_date(config.get("default", "end_date"))
-
-        self.sim_func = config.get("default", "sim_func")
-
-
-g_config = Config()
 
 
 class CF(object):

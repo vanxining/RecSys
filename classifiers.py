@@ -12,6 +12,15 @@ def _create_classifier():
         from sklearn.naive_bayes import GaussianNB
         return GaussianNB()
 
+    if g_config.classifier.startswith("DT"):
+        from sklearn import tree
+
+        criterion = "entropy"
+        if g_config.classifier == "DTG":
+            criterion = "gini"
+
+        return tree.DecisionTreeClassifier(criterion=criterion)
+
     if g_config.classifier == "LR":
         from sklearn.linear_model import LogisticRegression
         return LogisticRegression()

@@ -15,7 +15,7 @@ topn = 20
 adjust_rec_list = False
 rec_list_intact_length = 10
 
-# NB, LR, MLP
+# NB, DTG, DTE, LR, MLP
 classifier = "LR"
 
 if classifier == "NB":

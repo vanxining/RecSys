@@ -13,19 +13,35 @@ def get_py_config_file_content(path):
 
 
 class AttribValue(object):
-    def __init__(self, raw):
+    def __init__(self, raw, options):
         self.wrap = ""
         if raw and (raw[0] == '"' or raw[0] == "'"):
             self.wrap = raw[0]
             raw = raw[1:-1]
 
         self.value = raw
+        self.options = options
 
     def __str__(self):
         return self.wrap + self.value + self.wrap
 
     def __repr__(self):
         return self.__str__()
+
+    def next(self):
+        if self.options is not None:
+            nindex = 0
+            for index, option in enumerate(self.options):
+                if self.value == option:
+                    nindex = index + 1
+                    if nindex == len(self.options):
+                        nindex = 0
+
+                    break
+
+            return self.options[nindex]
+
+        return self.value
 
 
 class PyConfigFile(object):
@@ -44,9 +60,15 @@ class PyConfigFile(object):
 
             if line:
                 match = kv_pattern.match(line)
-                if match and match.group(1) not in ("_config", "raw",):
-                    self.attrib_keys.append(match.group(1))
-                    self.attrib[self.attrib_keys[-1]] = AttribValue(match.group(2))
+                if match:
+                    key = match.group(1)
+                    if key not in ("_config", "raw",):
+                        options = None
+                        if len(self.lines) >= 2 and self.lines[-2].startswith("## "):
+                            options = self.lines[-2][3:].split(", ")
+
+                        self.attrib_keys.append(key)
+                        self.attrib[key] = AttribValue(match.group(2), options)
 
     def sync(self, m):
         for key, val in self.attrib.iteritems():

@@ -8,6 +8,8 @@ raw = util.get_py_config_file_content(__file__)
 _config = "naive_predictor"
 
 project_limit = 1000
+
+## 1, 2, 3
 topn = 1
 
 # > 0: Consider the order of registering

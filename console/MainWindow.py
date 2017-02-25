@@ -187,6 +187,8 @@ class MainWindow(wx.Frame):
             new_val = u"False"
         elif val == u"False":
             new_val = u"True"
+        elif my_config.data.attrib[key].options is not None:
+            new_val = my_config.data.attrib[key].next().decode()
         else:
             dlg = wx.TextEntryDialog(caption=u"Change `%s`" % key,
                                      message=key + u" =",

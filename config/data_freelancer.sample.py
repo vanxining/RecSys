@@ -20,4 +20,5 @@ training_set_end_date = _T(2016, 8, 15)
 training_set_limit = 3000
 test_set_limit = 300
 
+## 2, 3, 4, 5
 win_times_threshold = 5

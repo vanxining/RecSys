@@ -171,6 +171,7 @@ class MainWindow(wx.Frame):
 
     def on_append_log(self, event):
         self.logger.append(event.log)
+        self.logger.go_to_end()
 
     def get_selected_config_file(self):
         return self.notebook.GetPageText(self.notebook.GetSelection())
@@ -204,11 +205,16 @@ class MainWindow(wx.Frame):
 
             my_config.list.SetItem(index, 1, new_val)
 
+    def enable_console(self, enabled):
+        self.notebook.Enable(enabled)
+        self.start.Enable(enabled)
+
     def on_worker_finished(self, event):
-        pass
+        self.enable_console(True)
 
     def on_start(self, event):
         self.logger.clear()
+        self.enable_console(False)
 
         worker = Worker(self, self.do_start)
         worker.start()

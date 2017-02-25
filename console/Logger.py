@@ -21,6 +21,9 @@ class MyRedirector(object):
         if msg:
             self.cached.append(msg)
 
+            if len(self.cached) >= 5:
+                self.flush()
+
     def flush(self):
         concated = "".join(self.cached)
         if concated:

@@ -290,7 +290,8 @@ def main():
     print "Total time cost: %.2f seconds.\n\n" % (time.time() - start)
     print g_config.raw
 
-    ts = myconfig.get_current_timestamp()
+    import logger
+    ts = logger.get_current_timestamp()
     with open("results/%s-%s.csv" % (ts, g_config.sim_func), "w") as outf:
         outf.write(datetime.now().isoformat() + '\n')
         outf.write("Training set size: %d, " % cf.m.shape[1])

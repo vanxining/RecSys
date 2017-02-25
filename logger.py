@@ -1,6 +1,9 @@
+from datetime import datetime
 from StringIO import StringIO
 
-import myconfig
+
+def get_current_timestamp():
+    return datetime.now().strftime("%Y%m%d-%H%M%S")
 
 
 class Logger(object):
@@ -12,6 +15,6 @@ class Logger(object):
         self.sio.write(msg + "\n")
 
     def save(self, fname):
-        ts = myconfig.get_current_timestamp()
+        ts = get_current_timestamp()
         with open("results/%s-%s.log" % (ts, fname), "w") as outf:
             outf.write(self.sio.getvalue())

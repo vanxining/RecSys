@@ -1,8 +1,11 @@
+#!/usr/bin/env python2
+
 import sys
 import os
 import ConfigParser
 
 import collab_filtering
+# noinspection PyUnresolvedReferences
 import sim
 
 
@@ -68,10 +71,10 @@ def find_best_coefficient(cef_name):
 
         coefficient += increment
 
-    print ""
-    print "Accuracy:", accuracy_max, accuracy_max_cef
-    print "Recall rate:", recall_max, recall_max_cef
-    print "Diversity:", diversity_max, diversity_max_cef
+    print("\tbest\t" + cef_name)
+    print("Accuracy: %g <- %g" % (accuracy_max, accuracy_max_cef))
+    print("Recall rate: %g <- %g" % (recall_max, recall_max_cef))
+    print("Diversity: %g <- %g" % (diversity_max, diversity_max_cef))
 
 
 def main():

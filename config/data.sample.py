@@ -4,10 +4,10 @@ import util
 
 
 def is_challenge_type_ok(challenge_type):
-    if len(challenge_types_whitelist) == 0:
+    if len(challenge_type_whitelist) == 0:
         return True
 
-    return challenge_type in challenge_types_whitelist
+    return challenge_type in challenge_type_whitelist
 
 
 raw = util.get_py_config_file_content(__file__)
@@ -23,4 +23,4 @@ end_date = datetime(2016, 4, 1)
 win_times_threshold = 5
 
 # Code, First2Finish, Assembly Competition, Bug Hunt, UI Prototype Competition
-challenge_types_whitelist = {"First2Finish",}
+challenge_type_whitelist = {"First2Finish", }

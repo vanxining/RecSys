@@ -220,7 +220,7 @@ class DlData(Data):
             index += 1
 
         # Challenge type (F2F, ...)
-        if len(g_config.challenge_types_whitelist) != 1:
+        if len(g_config.challenge_type_whitelist) != 1:
             line[index] = self.challenge_type_ids[challenge[u"challengeType"]]
             index += 1
 

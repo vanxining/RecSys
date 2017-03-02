@@ -22,5 +22,7 @@ end_date = datetime(2016, 4, 1)
 ## 1, 2, 3, 4, 5
 win_times_threshold = 5
 
+categorize_platech = True
+
 # Code, First2Finish, Assembly Competition, Bug Hunt, UI Prototype Competition
 challenge_type_whitelist = {"First2Finish", }

@@ -20,16 +20,20 @@ for index, line in enumerate(open(_get_path("platech.txt")).readlines()):
 categories = [int(n) for n in open(_get_path("result.txt")).read().split(',')]
 
 
-def get_category(pt):
-    if pt in platech:
-        return categories[platech[pt]]
+def get_category(pt, categorize):
+    raw_index = platech[pt]
+    return categories[raw_index] if categorize else raw_index
 
 
-def get_number_of_platech():
-    return max(categories)
+def get_number_of_platech(categorize):
+    return max(categories) if categorize else len(categories)
+
+
+def _test():
+    assert get_number_of_platech(categorize=True) == 11
+    assert get_category("Java", categorize=True) == 5
+    assert get_category("MySQL", categorize=True) == 10
 
 
 if __name__ == "__main__":
-    assert get_number_of_platech() == 11
-    assert get_category("Java") == 5
-    assert get_category("MySQL") == 10
+    _test()

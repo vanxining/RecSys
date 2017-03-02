@@ -128,6 +128,15 @@ class DlData(Data):
 
         return len(fake_line)
 
+    def _ptcat_index(self):
+        nb_vital_features = self._count_vital_features()
+
+        def ptcat_index(platech):
+            index = ptcat.get_category(platech, g_config.categorize_platech)
+            return nb_vital_features + index - 1
+
+        return ptcat_index
+
     def _count_user_win_times(self):
         user_win_times = defaultdict(int)
 
@@ -166,10 +175,7 @@ class DlData(Data):
             return ok
 
     def _validate_matrix(self, m, iterator):
-        nb_vital_features = self._count_vital_features()
-
-        def ptcat_index(platech):
-            return nb_vital_features + ptcat.get_category(platech) - 1
+        ptcat_index = self._ptcat_index()
 
         count = 20
 
@@ -229,11 +235,9 @@ class DlData(Data):
 
     def _generate_matrix(self, nb_rows, iterator):
         nb_vital_features = self._count_vital_features()
-        nb_platech = ptcat.get_number_of_platech()
+        nb_platech = ptcat.get_number_of_platech(g_config.categorize_platech)
         nb_cols = nb_vital_features + nb_platech + 1
-
-        def ptcat_index(platech):
-            return nb_vital_features + ptcat.get_category(platech) - 1
+        ptcat_index = self._ptcat_index()
 
         m = np.zeros((nb_rows, nb_cols), dtype=np.uint16)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
-from collections import namedtuple
 import sqlite3
+from collections import namedtuple
 
 import pymongo
 

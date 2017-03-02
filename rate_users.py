@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
-from math import log
 import sqlite3
+from math import log
 
 import pymongo
 

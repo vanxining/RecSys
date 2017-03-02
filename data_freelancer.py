@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
-from collections import defaultdict
 import sqlite3
+from collections import defaultdict
 
 import config.data_freelancer as data_config
 import logger

@@ -1,9 +1,10 @@
 #!/usr/bin/env python2
 
-import numpy
+import numpy as np
 
 import config.classifiers as g_config
 import datasets
+
 from logger import Logger
 
 
@@ -99,7 +100,7 @@ def output_result(classifier, nb_test, nb_correct, diversity):
 def run(classifier, dataset):
     classifier.fit(dataset.X_train, dataset.y_train)
 
-    with numpy.errstate(over="ignore"):
+    with np.errstate(over="ignore"):
         proba = classifier.predict_proba(dataset.X_test)
 
     lucky = set()

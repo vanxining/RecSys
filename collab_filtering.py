@@ -3,17 +3,16 @@
 import sys
 import time
 
-from StringIO import StringIO
-from datetime import datetime
 from collections import namedtuple, defaultdict
+from datetime import datetime
+from StringIO import StringIO
 
-import pymongo
 import numpy as np
-
-# noinspection PyUnresolvedReferences
-import sim
+import pymongo
 
 import config.collab_filtering as g_config
+# noinspection PyUnresolvedReferences
+import sim
 
 
 Result = namedtuple("Result", ("name", "num_real", "accuracy", "recall"))

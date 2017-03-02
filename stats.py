@@ -1,7 +1,8 @@
 #!/usr/bin/env python2
 
-import pymongo
 from collections import defaultdict
+
+import pymongo
 
 
 client = pymongo.MongoClient()

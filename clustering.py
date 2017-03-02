@@ -2,6 +2,7 @@
 
 import numpy as np
 import pymongo
+
 from sklearn.cluster import KMeans
 
 

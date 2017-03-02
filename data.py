@@ -1,15 +1,14 @@
 #!/usr/bin/env python2
 
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime
 
-import pymongo
 import numpy as np
-
-import logger
-import ptcat
+import pymongo
 
 import config.data as g_config
+import logger
+import ptcat
 
 
 def cmp_datetime(a, b):

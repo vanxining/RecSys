@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
 
-import sys
-import os
 import ConfigParser
+import os
+import sys
 
 import collab_filtering
 # noinspection PyUnresolvedReferences

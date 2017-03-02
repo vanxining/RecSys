@@ -1,11 +1,11 @@
 #!/usr/bin/env python2
 
-from keras.models import Sequential
+import numpy as np
+
 from keras.layers import Dense, Dropout, Activation
+from keras.models import Sequential
 from keras.optimizers import SGD
 from keras.utils import np_utils, generic_utils
-
-import numpy as np
 
 
 def _to_categorical(y, nb_classes):

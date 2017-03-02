@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 
-from pymongo import MongoClient
-
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime
+
+from pymongo import MongoClient
 
 
 client = MongoClient()

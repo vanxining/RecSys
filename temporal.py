@@ -1,6 +1,7 @@
+from datetime import datetime
+
 import pymongo
 
-from datetime import datetime
 from collab_filtering import cmp_datetime
 
 

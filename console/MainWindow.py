@@ -3,6 +3,7 @@
 import importlib
 import logging
 import os
+import sys
 import thread
 import xml.etree.ElementTree as ET
 
@@ -223,6 +224,9 @@ class MainWindow(wx.Frame):
     def do_start(self):
         mod_name = self.get_selected_config_file()[:-3]
 
+        # The subordinate scripts may modify the standard output.
+        stdout, stderr = sys.stdout, sys.stderr
+
         try:
             config_module = importlib.import_module("config." + mod_name)
             reload(config_module)
@@ -233,3 +237,4 @@ class MainWindow(wx.Frame):
             logging.exception("Failed to execute script: %s.py", mod_name)
 
         self.redirector.flush()
+        sys.stdout, sys.stderr = stdout, stderr

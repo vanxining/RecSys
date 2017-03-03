@@ -315,6 +315,7 @@ def outpu_result(start_time, cf):
         outf.write(sio.getvalue())
 
     stdout.write(sio.getvalue())
+    sys.stdout = stdout
 
 
 def main():

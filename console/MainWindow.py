@@ -53,11 +53,6 @@ class MainWindow(wx.Frame):
         self.SetSize(w, h)
         self.Centre(wx.BOTH)
 
-        self.redirector = Logger.MyRedirector(self)
-        self.std_redirector = Logger.RedirectStdStreams(
-            stdout=self.redirector, stderr=self.redirector
-        )
-
         self.prepare_logger()
 
         self.configs = {}
@@ -162,6 +157,11 @@ class MainWindow(wx.Frame):
                     lc.SetItem(index, 1, config.attrib[key].value.decode())
 
     def prepare_logger(self):
+        self.redirector = Logger.MyRedirector(self)
+        self.std_redirector = Logger.RedirectStdStreams(
+            stdout=self.redirector, stderr=self.redirector
+        )
+
         self.logger = Logger.ListBoxLogger(self.logger_ctrl)
         self.Bind(Logger.EVT_LOG, self.on_append_log)
 

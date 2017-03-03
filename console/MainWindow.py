@@ -147,8 +147,9 @@ class MainWindow(wx.Frame):
                     listctrl_width = lc.GetSize().GetX()
                     listctrl_width -= wx.SystemSettings.GetMetric(wx.SYS_VSCROLL_X, self)
 
-                lc.AppendColumn(u"Attribute", width=int(listctrl_width / 2))
-                lc.AppendColumn(u"Value", width=int(listctrl_width / 2))
+                attr_width = int(listctrl_width * 0.58)
+                lc.AppendColumn(u"Attribute", width=attr_width)
+                lc.AppendColumn(u"Value", width=(listctrl_width - attr_width))
 
                 config = PyConfigFile(folder + f)
                 my_config = MyConfigFile(config, lc)
@@ -191,7 +192,7 @@ class MainWindow(wx.Frame):
         elif my_config.data.attrib[key].options is not None:
             new_val = my_config.data.attrib[key].next().decode()
         else:
-            dlg = wx.TextEntryDialog(caption=u"Change `%s`" % key,
+            dlg = wx.TextEntryDialog(caption=u"Set attribute value",
                                      message=key + u" =",
                                      value=val,
                                      parent=self)

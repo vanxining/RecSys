@@ -162,7 +162,7 @@ class MainWindow(wx.Frame):
             stdout=self.redirector, stderr=self.redirector
         )
 
-        self.logger = Logger.ListBoxLogger(self.logger_ctrl)
+        self.logger = Logger.TextCtrlLogger(self.logger_ctrl)
         self.Bind(Logger.EVT_LOG, self.on_append_log)
 
         logging.basicConfig(level=logging.DEBUG,

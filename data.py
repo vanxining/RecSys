@@ -68,7 +68,7 @@ def get_winner(challenge):
 
 
 def _calc_duration(challenge, keyword):
-    posting_date = challenge["postingDate"]
+    posting_date = challenge[u"postingDate"]
     end_date = challenge[keyword]
     delta = end_date - posting_date
 
@@ -76,11 +76,11 @@ def _calc_duration(challenge, keyword):
 
 
 def _calc_max_working_days(challenge):
-    return _calc_duration(challenge, "submissionEndDate")
+    return _calc_duration(challenge, u"submissionEndDate")
 
 
 def _calc_appeals_duration(challenge):
-    return _calc_duration(challenge, "appealsEndDate")
+    return _calc_duration(challenge, u"appealsEndDate")
 
 
 class DlData(Data):

@@ -19,7 +19,7 @@ def platforms_and_technologies():
         for tech in challenge["technology"]:
             count[tech] += 1
 
-    for key in count:
+    for key in sorted(count.keys()):
         print "%s: %s" % (key, count[key])
 
     print "\nTotal:", len(count), "\n"
@@ -35,13 +35,15 @@ def winners():
             if submission[u"placement"] == 1:
                 if submission[u"submissionStatus"] == u"Active":
                     if winner_found:
-                        print challenge
-                        assert False
+                        print "More than one winner: [{}] {}".format(
+                            challenge[u"challengeId"],
+                            challenge[u"challengeName"]
+                        )
 
                     count[submission[u"handle"]] += 1
                     winner_found = True
 
-    for key in count:
+    for key in sorted(count.keys()):
         print "%s: %s" % (key, count[key])
 
     print "\nTotal:", len(count), "\n"

@@ -47,7 +47,7 @@ class MyFrame(wx.Frame):
             self.categories.append(line.decode("utf-8"))
 
         if os.path.exists("result.txt"):
-            self.result = open("result.txt").read().split(',')
+            self.result = [n.strip() for n in open("result.txt")]
         else:
             self.result = []
 
@@ -59,7 +59,7 @@ class MyFrame(wx.Frame):
 
     def Save(self):
         with open("result.txt", "w") as outf:
-            outf.write(','.join(self.result))
+            outf.write('\n'.join(self.result))
 
     def OnPaint(self, event):
         dc = wx.PaintDC(self)

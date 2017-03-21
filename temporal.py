@@ -1,26 +1,40 @@
+#!/usr/bin/env python2
+
+from __future__ import print_function
+
+import argparse
 from datetime import datetime
 
 import pymongo
-
-from collab_filtering import cmp_datetime
+from dateutil.parser import parse
 
 
 client = pymongo.MongoClient()
-db = client.topcoder
 
 
-def census(date_from, minute):
-    num_ratios = 0
-    ratio_sum = 0.0
-    regs_sum = 0
+class Minute(object):
+    def __init__(self, minute):
+        self.minute = minute
+        self.nb_projects = 0
+        self.ratio_sum = 0.0
+        self.nb_registrants = 0
+        self.tmp_nb_registrants = 0
 
-    condition = {
-        u"postingDate": {
-            u"$gte": date_from,
-        }
-    }
+    def finish_project(self, nb_registrants_all):
+        self.nb_projects += 1
+        self.ratio_sum += float(self.tmp_nb_registrants) / nb_registrants_all
+        self.nb_registrants += self.tmp_nb_registrants
+        self.tmp_nb_registrants = 0
 
-    for challenge in db.challenges.find(condition):
+    def stats(self):
+        return (self.ratio_sum / self.nb_projects * 100.0,
+                float(self.nb_registrants) / self.nb_projects)
+
+
+def topcoder(minutes):
+    db = client.topcoder
+
+    for challenge in db.challenges.find():
         if u"registrants" not in challenge:
             continue
 
@@ -28,71 +42,74 @@ def census(date_from, minute):
         if len(regs) == 0:
             continue
 
-        regs.sort(cmp=lambda x, y: cmp_datetime(x[u"registrationDate"],
-                                                y[u"registrationDate"]))
-
-        d0 = challenge[u"postingDate"]
-        count = 0
+        postingDate = challenge[u"postingDate"]
 
         for reg in regs:
-            delta = (reg[u"registrationDate"] - d0).total_seconds()
+            val = reg[u"registrationDate"]
+            if type(val) is unicode:
+                registrationDate = parse(val).replace(tzinfo=None)
+            else:
+                registrationDate = val
 
-            if delta <= minute * 60:
-                count += 1
+            delta = (registrationDate - postingDate).total_seconds()
 
-        num_ratios += 1
-        ratio_sum += float(count) / len(regs)
-        regs_sum += count
+            for minute in minutes:
+                if delta <= minute.minute * 60:
+                    minute.tmp_nb_registrants += 1
 
-    if num_ratios > 0:
-        return ratio_sum / num_ratios, float(regs_sum) / num_ratios
-    else:
-        return 0.0, 0.0
+        for minute in minutes:
+            minute.finish_project(len(regs))
 
 
-def print_all_dates(date_from):
-    condition = {
-        u"postingDate": {
-            u"$gte": date_from,
-        }
-    }
+def freelancer(minutes):
+    db = client.freelancer
 
-    sorter = (u"postingDate", pymongo.DESCENDING)
+    for project in db.projects.find():
+        if (minutes[-1].nb_projects + 1) % 100 == 0:
+            print("counter:", minutes[-1].nb_projects + 1)
 
-    for challenge in db.challenges.find(condition).sort(*sorter):
-        print challenge[u"postingDate"]
+        if u"result" not in project or u"bids" not in project[u"result"]:
+            continue
+
+        if u"bid_avg" not in project[u"bid_stats"]:
+            continue
+
+        bids = project[u"result"][u"bids"]
+        if len(bids) == 0:
+            continue
+
+        postingDate = datetime.fromtimestamp(project[u"submitdate"])
+
+        for bid in bids:
+            registrationDate = datetime.fromtimestamp(bid[u"submitdate_ts"])
+            delta = (registrationDate - postingDate).total_seconds()
+
+            for minute in minutes:
+                if delta <= minute.minute * 60:
+                    minute.tmp_nb_registrants += 1
+
+        for minute in minutes:
+            minute.finish_project(len(bids))
 
 
 def main():
-    date_from = datetime(2015, 1, 1)
+    parser = argparse.ArgumentParser("full_stats")
+    parser.add_argument("dataset",
+                        choices=("topcoder", "freelancer"),
+                        help="the dataset to census")
 
+    args = parser.parse_args()
+
+    minutes = []
     minute = 1
-    coverage = 0.0
-
-    # 1024 minutes = 17 hours
-    # 4096 minutes = 2.85 days
-    # 8192 minutes = 5.69 days
-
-    # 1 minutes: 0.70% - 0.1
-    # 2 minutes: 0.83% - 0.1
-    # 4 minutes: 1.20% - 0.2
-    # 8 minutes: 1.95% - 0.3
-    # 16 minutes: 3.43% - 0.5
-    # 32 minutes: 5.97% - 0.9
-    # 64 minutes: 10.13% - 1.7
-    # 128 minutes: 17.06% - 3.0
-    # 256 minutes: 26.60% - 4.8
-    # 512 minutes: 39.72% - 7.5
-    # 1024 minutes: 57.48% - 11.3
-    # 2048 minutes: 74.96% - 15.5
-    # 4096 minutes: 89.30% - 19.3
-    # 8192 minutes: 96.29% - 21.7
-
-    while coverage < 0.9:
-        coverage, regs_mean = census(date_from, minute)
-        print "%d minutes: %.2f%% - %.1f" % (minute, coverage * 100, regs_mean)
-
+    while minute <= 2 ** 14:
+        minutes.append(Minute(minute))
         minute *= 2
+
+    globals()[args.dataset](minutes)
+
+    for minute in minutes:
+        print("%d minutes: %.2f%% - %.1f" % ((minute.minute,) + minute.stats()))
 
 
 if __name__ == "__main__":

@@ -60,11 +60,9 @@ def predict():
 
         topn = min(g_config.topn, len(devs))
         hightest = heapq.nlargest(topn, devs, key=lambda d: d.rating)
-        correct = False
 
         for dev in hightest:
             if dev.uid == project[WINNER]:
-                correct = True
                 nb_correct += 1
 
                 break

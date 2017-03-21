@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 import argparse
 
 from bson import json_util
@@ -30,7 +32,9 @@ def freelancer():
 
 def main():
     parser = argparse.ArgumentParser("find_one")
-    parser.add_argument("dataset", help="the dataset to extract")
+    parser.add_argument("dataset",
+                        choices=("topcoder", "topcoder_user", "freelancer"),
+                        help="the dataset to extract")
 
     args = parser.parse_args()
     print(globals()[args.dataset]())

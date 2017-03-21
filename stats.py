@@ -13,14 +13,14 @@ def platforms_and_technologies():
     count = defaultdict(int)
 
     for challenge in db.challenges.find():
-        for plat in challenge["platforms"]:
+        for plat in challenge[u"platforms"]:
             count[plat] += 1
 
-        for tech in challenge["technology"]:
+        for tech in challenge[u"technology"]:
             count[tech] += 1
 
     for key in sorted(count.keys()):
-        print "%s: %s" % (key, count[key])
+        print u"%s: %s" % (key, count[key])
 
     print "\nTotal:", len(count), "\n"
 
@@ -35,7 +35,7 @@ def winners():
             if submission[u"placement"] == 1:
                 if submission[u"submissionStatus"] == u"Active":
                     if winner_found:
-                        print "More than one winner: [{}] {}".format(
+                        print u"More than one winner: [{}] {}".format(
                             challenge[u"challengeId"],
                             challenge[u"challengeName"]
                         )
@@ -44,7 +44,7 @@ def winners():
                     winner_found = True
 
     for key in sorted(count.keys()):
-        print "%s: %s" % (key, count[key])
+        print u"%s: %s" % (key, count[key])
 
     print "\nTotal:", len(count), "\n"
 

@@ -16,8 +16,8 @@ raw = util.get_py_config_file_content(__file__)
 
 _config = "data"
 
-year_from = 2015
-end_date = datetime(2016, 4, 1)
+begin_date = datetime(2015, 10, 1)
+end_date = datetime(2016, 10, 1)
 
 ## 1, 2, 3, 4, 5
 win_times_threshold = 5

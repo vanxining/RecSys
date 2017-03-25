@@ -37,7 +37,7 @@ class Data(object):
     def training_set(self):
         condition = {
             u"postingDate": {
-                u"$gte": datetime(g_config.year_from, 1, 1),
+                u"$gte": g_config.begin_date,
                 u"$lt": g_config.end_date,
             }
         }

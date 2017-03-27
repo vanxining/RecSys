@@ -11,10 +11,6 @@ import logger
 import ptcat
 
 
-def cmp_datetime(a, b):
-    return -1 if a < b else 1 if a > b else 0
-
-
 class Data(object):
     def __init__(self):
         self.client = pymongo.MongoClient()

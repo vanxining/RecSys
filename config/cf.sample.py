@@ -28,7 +28,9 @@ topcoder_challenge_type_whitelist = {"First2Finish",}
 freelancer_begin_date = _T(2016, 11, 25)
 freelancer_end_date = _T(2016, 12, 12)
 
-# 3, 20, 17
+# The project must contain all the required technologies
+# An empty list/tuple/set is OK
+# Examples: (3,), (20,), (17,)
 freelancer_tech_requirement = (20,)
 
 ## Naive, Cosine, Breese, Neighbor, Neighbor2, NeighborGlobal, Active

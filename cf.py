@@ -21,12 +21,8 @@ For every seed developer, recommend 10 similar peers.
 '''
 
 
-Result = namedtuple("Result", ("name", "num_real", "accuracy", "recall"))
-TestRound = namedtuple("TestRound", ("time", "accuracy", "recall", "diversity"))
-
-
-def cmp_datetime(a, b):
-    return -1 if a < b else 1 if a > b else 0
+Result = namedtuple("Result", ("name", "num_real", "accuracy", "recall", "f1"))
+TestRound = namedtuple("TestRound", ("time", "accuracy", "recall", "f1", "diversity"))
 
 
 class TopCoderChallenge(object):
@@ -34,11 +30,7 @@ class TopCoderChallenge(object):
         self.id = challenge[u"challengeId"]
         self.name = challenge[u"challengeName"]
 
-        challenge[u"registrants"].sort(
-            cmp=lambda x, y: cmp_datetime(x[u"registrationDate"],
-                                          y[u"registrationDate"])
-        )
-
+        challenge[u"registrants"].sort(key=lambda r: r[u"registrationDate"])
         self.regs = [reg[u"handle"] for reg in challenge[u"registrants"]]
 
 
@@ -181,8 +173,9 @@ class CF(object):
         self.predicted_ever.clear()
 
         nb_processed = 0
-        accuracy_sum = 0
-        recall_sum = 0
+        accuracy_sum = 0.0
+        recall_sum = 0.0
+        f1_sum = 0.0
 
         for challenge in self.dataset.test_set():
             nb_seeds = seeds_selector(challenge, challenge.regs)
@@ -233,31 +226,39 @@ class CF(object):
 
             if len(predicted) > 0:
                 self.predicted_ever |= predicted
-
                 intersection = real.intersection(predicted)
+
                 accuracy = len(intersection) / float(len(predicted))
                 recall = len(intersection) / float(len(real))
+                if (accuracy + recall) > 0.0:
+                    f1 = 2.0 * accuracy * recall / (accuracy + recall)
+                else:
+                    f1 = 0.0
 
                 result = Result(challenge.name,
                                 len(real),
                                 accuracy,
-                                recall)
+                                recall,
+                                f1)
 
                 self.results[challenge.id].append(result)
 
                 nb_processed += 1
                 accuracy_sum += accuracy
                 recall_sum += recall
+                f1_sum += f1
 
                 print(challenge.name)
-                print("> Accuracy: %5.2f%%" % (accuracy * 100))
-                print("> Recall: %5.2f%% [#real: %2d]" % (recall * 100, len(real)))
+                print("> Accuracy: %5.2f%%" % (accuracy * 100.0))
+                print("> Recall: %5.2f%% [#real: %2d]" % (recall * 100.0, len(real)))
+                print("> F1 score: %5.2f" % f1)
 
         assert nb_processed > 0
 
         test_round = TestRound(time.time() - start,
                                accuracy_sum / float(nb_processed),
                                recall_sum / float(nb_processed),
+                               f1_sum / float(nb_processed),
                                self.diversity())
         self.test_rounds.append(test_round)
 
@@ -279,30 +280,32 @@ def outpu_result(start_time, cf):
     stdout = sys.stdout
     sys.stdout = sio
 
+    nb_test_cases = 0
     accuracy_sums = [0.0] * len(cf.test_rounds)
     recall_sums = list(accuracy_sums)
-    num_test_cases = 0
+    f1_sums = list(accuracy_sums)
 
     for results in cf.results.itervalues():
         assert len(results) == len(cf.test_rounds)
 
-        num_test_cases += 1
-
+        nb_test_cases += 1
         for i, result in enumerate(results):
             accuracy_sums[i] += result.accuracy
             recall_sums[i] += result.recall
+            f1_sums[i] += result.f1
 
     print("=============================\n")
 
     for i, nb in enumerate(g_config.nb_seeds):
         print("# seed(s) = %d:" % nb)
-        print("  Accuracy:\t%.2f%%" % (accuracy_sums[i] / num_test_cases * 100.0))
-        print("  Recall rate:\t%.2f%%" % (recall_sums[i] / num_test_cases * 100.0))
-        print("  Diversity:\t%.2f%%" % (cf.test_rounds[i].diversity * 100.0))
-        print("  Time cost:\t%.2fs\n" % cf.test_rounds[i].time)
+        print("  Accuracy:\t\t%.2f%%" % (accuracy_sums[i] / nb_test_cases * 100.0))
+        print("  Recall rate:\t\t%.2f%%" % (recall_sums[i] / nb_test_cases * 100.0))
+        print("  F1 score:\t\t%.2f" % (f1_sums[i] / nb_test_cases))
+        print("  Diversity:\t\t%.2f%%" % (cf.test_rounds[i].diversity * 100.0))
+        print("  Time cost:\t\t%.2fs\n" % cf.test_rounds[i].time)
 
     print("Training set size: {}".format(cf.m.shape))
-    print("Test set size: %d" % num_test_cases)
+    print("Test set size: %d" % nb_test_cases)
     print("Total time cost: %.2fs.\n" % (time.time() - start_time))
 
     print("=============================\n")

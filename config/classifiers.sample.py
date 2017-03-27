@@ -20,6 +20,9 @@ rec_list_intact_length = 10
 ## NB, DTG, DTE, LR, MLP
 classifier = "LR"
 
+random_classifiers = ("MLP",)
+random_repetition = 10
+
 if classifier == "NB":
     normalize_dataset = False
 elif classifier == "MLP":

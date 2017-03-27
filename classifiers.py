@@ -81,17 +81,14 @@ def recommend(proba):
 
 
 def output_result(classifier, nb_test, nb_correct, diversity):
-    if g_config.classifier == "MLP":
-        print("\n")
-
     logger = Logger()
 
     logger.log(str(type(classifier)))
     logger.log(g_config.raw)
     logger.log("----------")
-    logger.log("# correct: %d/%d" % (nb_correct, nb_test))
-    logger.log("Accuracy rate: %g%%" % (float(nb_correct) / nb_test * 100))
-    logger.log("Diversity: %g%%" % (diversity * 100))
+    logger.log("# correct: %g/%d" % (nb_correct, nb_test))
+    logger.log("Accuracy rate: %.2f%%" % (float(nb_correct) / nb_test * 100.0))
+    logger.log("Diversity: %.2f%%" % (diversity * 100.0))
 
     fname = "classifiers-%s-%s" % (g_config.dataset, g_config.classifier)
     logger.save(fname)
@@ -113,17 +110,44 @@ def run(classifier, dataset):
         if real in rec_list:
             nb_correct += 1
 
-    output_result(classifier=classifier,
-                  nb_test=len(dataset.y_test),
-                  nb_correct=nb_correct,
-                  diversity=len(lucky) / float(len(dataset.labels)))
+    return nb_correct, lucky
+
+
+def run_helper(classifier, dataset):
+    if g_config.classifier not in g_config.random_classifiers:
+        repetition = 1
+    else:
+        repetition = g_config.random_repetition
+
+    nb_correct_sum = 0
+    diversity_sum = 0.0
+
+    for i in xrange(repetition):
+        if i > 0:
+            print("Repetition: %d/%d\n" % (i + 1, repetition))
+
+        nb_correct, lucky = run(classifier, dataset)
+
+        nb_correct_sum += nb_correct
+        diversity_sum += len(lucky) / float(len(dataset.labels))
+
+        if g_config.classifier == "MLP":
+            print("\n")
+
+    return nb_correct_sum / float(repetition), diversity_sum / repetition
 
 
 def main():
     dataset = datasets.load_dataset(g_config.dataset,
                                     g_config.normalize_dataset)
 
-    run(_create_classifier(), dataset)
+    classifier = _create_classifier()
+    nb_correct, diversity = run_helper(classifier, dataset)
+
+    output_result(classifier=classifier,
+                  nb_test=len(dataset.y_test),
+                  nb_correct=nb_correct,
+                  diversity=diversity)
 
 
 if __name__ == "__main__":

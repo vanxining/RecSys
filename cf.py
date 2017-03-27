@@ -250,7 +250,7 @@ class CF(object):
 
                 print(challenge.name)
                 print("> Accuracy: %5.2f%%" % (accuracy * 100.0))
-                print("> Recall: %5.2f%% [#real: %2d]" % (recall * 100.0, len(real)))
+                print("> Recall rate: %5.2f%% [#real: %2d]" % (recall * 100.0, len(real)))
                 print("> F1 score: %5.2f" % f1)
 
         assert nb_processed > 0

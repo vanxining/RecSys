@@ -7,6 +7,7 @@ import numpy as np
 import pymongo
 
 import config.data as g_config
+import datasets.util
 import logger
 import ptcat
 
@@ -17,18 +18,10 @@ class Data(object):
         self.db = self.client.topcoder
 
     def is_challenge_ok(self, challenge):
-        if u"registrants" not in challenge:
-            return False
-
-        if len(challenge[u"registrants"]) == 0:
-            return False
-
         if not g_config.is_challenge_type_ok(challenge[u"challengeType"]):
             return False
 
-        # TODO: type
-        return (challenge[u"type"] == u"develop" and
-                len(challenge[u"prize"]) > 0)
+        return datasets.util.topcoder_is_ok(challenge)
 
     def training_set(self):
         condition = {
@@ -54,13 +47,6 @@ class Data(object):
         for challenge in self.db.challenges.find(condition):
             if self.is_challenge_ok(challenge):
                 yield challenge
-
-
-def get_winner(challenge):
-    for submission in challenge[u"finalSubmissions"]:
-        if submission[u"placement"] == 1:
-            if submission[u"submissionStatus"] == u"Active":
-                return submission[u"handle"]
 
 
 def _calc_duration(challenge, keyword):
@@ -137,8 +123,8 @@ class DlData(Data):
         user_win_times = defaultdict(int)
 
         for challenge in Data.training_set(self):
-            winner = get_winner(challenge)
-            if winner:
+            winner = datasets.util.topcoder_get_winner(challenge)
+            if winner is not None:
                 user_win_times[winner] += 1
 
         self.user_win_times = user_win_times
@@ -161,7 +147,7 @@ class DlData(Data):
 
         # count_user_win_times() refers this function
         if ok and self.user_win_times is not None:
-            winner = get_winner(challenge)
+            winner = datasets.util.topcoder_get_winner(challenge)
             if winner is None:
                 return False
             else:
@@ -185,7 +171,7 @@ class DlData(Data):
             for tech in challenge[u"technology"]:
                 assert m[index, ptcat_index(tech)] == 1
 
-            winner = get_winner(challenge)
+            winner = datasets.util.topcoder_get_winner(challenge)
             assert winner is not None
 
             assert m[index, -1] == self.user_ids[winner]
@@ -247,7 +233,9 @@ class DlData(Data):
             for tech in challenge[u"technology"]:
                 line[ptcat_index(tech)] = 1
 
-            line[nb_cols - 1] = self.user_ids[get_winner(challenge)]
+            winner = datasets.util.topcoder_get_winner(challenge)
+            assert winner is not None
+            line[nb_cols - 1] = self.user_ids[winner]
 
         return m
 

@@ -9,6 +9,8 @@ from datetime import datetime
 
 import pymongo
 
+import datasets.util
+
 
 client = pymongo.MongoClient()
 
@@ -31,6 +33,9 @@ def topcoder():
     winning = defaultdict(int)
 
     for challenge in db.challenges.find():
+        if not datasets.util.topcoder_is_ok(challenge):
+            continue
+
         nb_projects += 1
         prize_sum += sum(challenge[u"prize"])
 
@@ -46,15 +51,10 @@ def topcoder():
         for registrant in challenge[u"registrants"]:
             registering[registrant[u"handle"]] += 1
 
-        for submission in challenge[u"finalSubmissions"]:
-            if submission[u"placement"] == 1:
-                if submission[u"submissionStatus"] == u"Active":
-                    handle = submission[u"handle"]
-                    if handle == u"Applications":
-                        continue
-
-                    nb_finished_projects += 1
-                    winning[handle] += 1
+        winner = datasets.util.topcoder_get_winner(challenge)
+        if winner is not None:
+            nb_finished_projects += 1
+            winning[winner] += 1
 
     print("total project count:", nb_projects)
     print("total developer count:", len(registering))

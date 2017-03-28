@@ -275,7 +275,7 @@ def run_all_test_rounds(cf):
         print("")
 
 
-def outpu_result(start_time, cf):
+def output_result(start_time, cf):
     sio = StringIO()
     stdout = sys.stdout
     sys.stdout = sio
@@ -334,7 +334,7 @@ def main():
 
     run_all_test_rounds(cf)
 
-    outpu_result(start_time, cf)
+    output_result(start_time, cf)
 
     sim.ClearCache()
 

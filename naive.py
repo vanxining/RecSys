@@ -2,80 +2,112 @@
 
 import heapq
 import sqlite3
+from collections import namedtuple
+
+import pymongo
 
 import config.naive as g_config
+import datasets.util
 from logger import Logger
 
 
-ID = 0
-TYPE = 1
-SUBMIT_DATE = 2
-BUDGET_MIN = 3
-BUDGET_MAX = 4
-TECHNOLOGIES = 5
-DEVELOPERS = 6
-WINNER = 7
-
-SEL_PROJECTS_QUERY = 'SELECT * FROM "projects" ORDER BY "submit_date" DESC LIMIT %d'
+SEL_PROJECTS_QUERY = 'SELECT "developers","winner" FROM "projects" ORDER BY "submit_date" DESC LIMIT %d'
 RATING_QUERY = 'SELECT "rating" FROM "dev_ratings" WHERE "uid" = %d'
 
 
 class Developer(object):
-    def __init__(self, uid):
+    def __init__(self, uid, rating=0.0):
         self.uid = uid
-        self.rating = 0.0
+        self.rating = rating
 
 
-def predict():
-    logger = Logger()
-    logger.log(g_config.raw)
-    logger.log("----------")
+Project = namedtuple("Project", ("developers", "winner",))
 
+
+def topcoder():
+    client = pymongo.MongoClient()
+    db = client.topcoder
+
+    sorter = (u"postingDate", pymongo.DESCENDING)
+    for challenge in db.challenges.find().sort(*sorter).limit(g_config.project_limit):
+        if not datasets.util.topcoder_is_ok(challenge):
+            continue
+
+        winner = datasets.util.topcoder_get_winner(challenge)
+        if winner is None:
+            continue
+
+        developers = []
+        registrants = challenge[u"registrants"]
+        registrants.sort(key=lambda r: r[u"registrationDate"])
+
+        for reg in registrants:
+            handle = reg[u"handle"]
+            user = db.users.find_one({u"handle": handle})
+            if user is not None and u"maxRating" in user:
+                rating = user[u"maxRating"][u"rating"]
+            else:
+                rating = 0
+
+            developers.append(Developer(handle, rating))
+
+        yield Project(developers=developers, winner=winner)
+
+
+def freelancer():
     con = sqlite3.connect("datasets/freelancer.sqlite")
     cursor = con.cursor()
-
-    nb_projects = 0
-    nb_correct = 0
 
     query = SEL_PROJECTS_QUERY % g_config.project_limit
     cursor.execute(query)
 
     for project in cursor.fetchall():
-        all_users_rated = True
-        devs = [Developer(int(dev)) for dev in project[DEVELOPERS].split(' ')]
+        developers = [Developer(int(dev)) for dev in project[0].split(' ')]
 
-        for i, dev in enumerate(devs):
+        for i, dev in enumerate(developers):
             cursor.execute(RATING_QUERY % dev.uid)
             row = cursor.fetchone()
             if row is None:
-                all_users_rated = False
-                break
+                continue
 
-            devs[i].rating = row[0] + g_config.order_factor / (i + 1)
+            developers[i].rating = row[0] + g_config.order_factor / (i + 1)
 
-        if not all_users_rated:
-            continue
+        yield Project(developers=developers, winner=project[1])
 
-        nb_projects += 1
 
-        topn = min(g_config.topn, len(devs))
-        hightest = heapq.nlargest(topn, devs, key=lambda d: d.rating)
+def output_result(nb_correct, nb_projects):
+    logger = Logger()
 
-        for dev in hightest:
-            if dev.uid == project[WINNER]:
-                nb_correct += 1
-
-                break
+    logger.log(g_config.raw)
+    logger.log("----------")
 
     logger.log("# projects: %d" % nb_projects)
     logger.log("# correct: %d" % nb_correct)
-    logger.log("Correct rate: %g%%" % ((float(nb_correct) / nb_projects) * 100))
+    logger.log("Accuracy: %.2f%%" % ((float(nb_correct) / nb_projects) * 100.0))
 
-    logger.save("naive_predictor")
+    logger.save("naive-predictor-" + g_config.dataset)
+
+
+def predict():
+    nb_projects = 0
+    nb_correct = 0
+
+    for project in globals()[g_config.dataset]():
+        nb_projects += 1
+
+        topn = min(g_config.topn, len(project.developers))
+        hightest = heapq.nlargest(topn, project.developers, key=lambda d: d.rating)
+
+        for dev in hightest:
+            if dev.uid == project.winner:
+                nb_correct += 1
+                break
+
+    return nb_correct, nb_projects
 
 
 def main():
-    predict()
+    output_result(*predict())
 
 
 if __name__ == "__main__":

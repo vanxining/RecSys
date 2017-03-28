@@ -7,6 +7,9 @@ raw = util.get_py_config_file_content(__file__)
 
 _config = "naive_predictor"
 
+## topcoder, freelancer
+dataset = "topcoder"
+
 project_limit = 1000
 
 ## 1, 2, 3

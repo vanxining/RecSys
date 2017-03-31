@@ -1,13 +1,12 @@
 #!/usr/bin/env python2
 
 from collections import defaultdict
-from datetime import datetime
 
 import numpy as np
 import pymongo
 
 import config.data as g_config
-import datasets.util
+import datasets
 import logger
 import ptcat
 
@@ -254,6 +253,8 @@ class DlData(Data):
 
         np.savetxt("datasets/training_topcoder.txt", training_set, fmt="%d")
         np.savetxt("datasets/test_topcoder.txt", test_set, fmt="%d")
+
+        datasets.generate_developer_mappings("topcoder", self.user_ids)
 
         self.logger.log("# distinct developers: %d" % len(self.user_ids))
         self.logger.log("DONE!")

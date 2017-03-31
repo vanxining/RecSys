@@ -43,7 +43,7 @@ def update_ratings(devs):
 
     for dev in devs:
         cursor.execute('SELECT "rating" FROM "dev_ratings" WHERE "uid" = %d' %
-                        mappings.devs[dev[0]])
+                        mappings.developers[dev[0]])
         row = cursor.fetchone()
         if row is None:
             return

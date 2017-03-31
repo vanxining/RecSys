@@ -1,4 +1,6 @@
-import numpy as np
+import numpy
+
+import util as util
 
 
 class Dataset(object):
@@ -22,10 +24,10 @@ def _normalize(matrix_2d):
 
 
 def load_dataset(name, normalize):
-    dtype = np.float if normalize else np.uint16
+    dtype = numpy.float if normalize else numpy.uint16
 
-    training = np.loadtxt("datasets/training_%s.txt" % name, dtype=dtype)
-    test = np.loadtxt("datasets/test_%s.txt" % name, dtype=dtype)
+    training = numpy.loadtxt("datasets/training_%s.txt" % name, dtype=dtype)
+    test = numpy.loadtxt("datasets/test_%s.txt" % name, dtype=dtype)
 
     dataset = Dataset()
     dataset.X_train = training[:, :-1]
@@ -39,3 +41,18 @@ def load_dataset(name, normalize):
         dataset.X_test = _normalize(dataset.X_test)
 
     return dataset
+
+
+def generate_developer_mappings(dataset_name, mappings):
+    with open("datasets/dev_mappings_%s.py" % dataset_name, "w") as outf:
+        outf.write("developers = (\n")
+
+        rmappings = [0] * len(mappings)
+        for dev, label in mappings.iteritems():
+            rmappings[label] = dev
+
+        fmt = "    %s,\n" % ("%d" if type(rmappings[0]) is int else '"%s"')
+        for label in rmappings:
+            outf.write(fmt % label)
+
+        outf.write(")\n")

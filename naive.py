@@ -24,12 +24,66 @@ class Developer(object):
 Project = namedtuple("Project", ("developers", "winner",))
 
 
-def topcoder():
-    client = pymongo.MongoClient()
-    db = client.topcoder
+_mongo_client = None
+_mongo_db = None
 
-    sorter = (u"postingDate", pymongo.DESCENDING)
-    for challenge in db.challenges.find().sort(*sorter).limit(g_config.project_limit):
+_sqlite_conn = None
+_sqlite_cursor = None
+
+
+def _connect_to_mongodb():
+    global _mongo_client, _mongo_db
+
+    if _mongo_client is None:
+        _mongo_client = pymongo.MongoClient()
+        _mongo_db = _mongo_client.topcoder
+
+
+def _connect_to_sqlite_db():
+    global _sqlite_conn, _sqlite_cursor
+
+    _sqlite_conn = sqlite3.connect("datasets/freelancer.sqlite")
+    _sqlite_cursor = _sqlite_conn.cursor()
+
+
+def topcoder_rate(developers):
+    _connect_to_mongodb()
+
+    for i, dev in enumerate(developers):
+        user = _mongo_db.users.find_one({u"handle": dev.uid})
+        if user is not None:
+            if g_config.topcoder_max_rating and u"maxRating" in user:
+                dev.rating = user[u"maxRating"][u"rating"]
+            else:
+                dev.rating = 1.0
+
+            if u"stats" in user:
+                stats = user[u"stats"][u"DEVELOP"]
+
+                if g_config.topcoder_winning_rate and stats[u"challenges"] > 0:
+                    dev.rating *= (1.0 + float(stats[u"wins"]) / stats[u"challenges"])
+
+                if g_config.topcoder_reliability:
+                    max_reliability = 0.0
+
+                    for subtrack in stats[u"subTracks"]:
+                        r = subtrack[u"rank"][u"reliability"]
+                        if r is not None:
+                            max_reliability = max(max_reliability, r)
+
+                    dev.rating *= (1.0 + max_reliability)
+
+        dev.rating *= (1.0 + g_config.order_factor / (i + 1))
+
+    return developers
+
+
+def _topcoder():
+    _connect_to_mongodb()
+
+    for challenge in (_mongo_db.challenges
+                               .find().sort(u"postingDate", pymongo.DESCENDING)
+                               .limit(g_config.project_limit)):
         if not datasets.util.topcoder_is_ok(challenge):
             continue
 
@@ -37,40 +91,38 @@ def topcoder():
         if winner is None:
             continue
 
-        developers = []
         registrants = challenge[u"registrants"]
         registrants.sort(key=lambda r: r[u"registrationDate"])
 
-        for reg in registrants:
-            handle = reg[u"handle"]
-            user = db.users.find_one({u"handle": handle})
-            if user is not None and u"maxRating" in user:
-                rating = user[u"maxRating"][u"rating"]
-            else:
-                rating = 0
-
-            developers.append(Developer(handle, rating))
+        developers = [Developer(reg[u"handle"]) for reg in registrants]
+        topcoder_rate(developers)
 
         yield Project(developers=developers, winner=winner)
 
 
-def freelancer():
-    con = sqlite3.connect("datasets/freelancer.sqlite")
-    cursor = con.cursor()
+def freelancer_rate(developers):
+    _connect_to_sqlite_db()
+
+    for i, dev in enumerate(developers):
+        _sqlite_cursor.execute(RATING_QUERY % dev.uid)
+        row = _sqlite_cursor.fetchone()
+        if row is None:
+            continue
+
+        developers[i].rating = row[0] * (1.0 + g_config.order_factor / (i + 1))
+
+    return developers
+
+
+def _freelancer():
+    _connect_to_sqlite_db()
 
     query = SEL_PROJECTS_QUERY % g_config.project_limit
-    cursor.execute(query)
+    _sqlite_cursor.execute(query)
 
-    for project in cursor.fetchall():
+    for project in _sqlite_cursor.fetchall():
         developers = [Developer(int(dev)) for dev in project[0].split(' ')]
-
-        for i, dev in enumerate(developers):
-            cursor.execute(RATING_QUERY % dev.uid)
-            row = cursor.fetchone()
-            if row is None:
-                continue
-
-            developers[i].rating = row[0] + g_config.order_factor / (i + 1)
+        freelancer_rate(developers)
 
         yield Project(developers=developers, winner=project[1])
 
@@ -92,7 +144,7 @@ def predict():
     nb_projects = 0
     nb_correct = 0
 
-    for project in globals()[g_config.dataset]():
+    for project in globals()['_' + g_config.dataset]():
         nb_projects += 1
 
         topn = min(g_config.topn, len(project.developers))

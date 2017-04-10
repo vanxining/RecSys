@@ -128,7 +128,7 @@ def run_helper(classifier, dataset):
 
 def main():
     dataset = datasets.load_dataset(g_config.dataset,
-                                    g_config.normalize_dataset)
+                                    g_config.normalize_dataset())
 
     classifier = _create_classifier()
     nb_correct, diversity = run_helper(classifier, dataset)

@@ -9,7 +9,8 @@ _config = "classifiers"
 
 ## topcoder, freelancer
 dataset = "topcoder"
-normalize_dataset = False
+# Refer normalize_dataset()
+_normalize_dataset = False
 
 ## 5, 10, 15, 20, 30
 topn = 20
@@ -23,7 +24,11 @@ classifier = "LR"
 random_classifiers = ("MLP",)
 random_repetition = 10
 
-if classifier == "NB":
-    normalize_dataset = False
-elif classifier == "MLP":
-    normalize_dataset = True
+
+def normalize_dataset():
+    if classifier == "NB":
+        return False
+    elif classifier == "MLP":
+        return True
+
+    return _normalize_dataset

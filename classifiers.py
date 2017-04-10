@@ -1,11 +1,18 @@
 #!/usr/bin/env python2
+import importlib
 
 import numpy as np
 
 import config.classifiers as g_config
 import datasets
-
+import naive
 from logger import Logger
+
+
+class _Developer(naive.Developer):
+    def __init__(self, uid, label, rating):
+        super(_Developer, self).__init__(uid, rating)
+        self.label = label
 
 
 def _create_classifier():
@@ -31,36 +38,22 @@ def _create_classifier():
         return MLP()
 
 
-def update_ratings(devs):
-    if g_config.dataset != "freelancer":
-        return False
+def update_ratings(developers):
+    mappings = importlib.import_module("datasets.dev_mappings_" + g_config.dataset)
 
-    import datasets.dev_mappings_freelancer as mappings
+    for dev in developers:
+        dev.uid = mappings.developers[dev.label]
 
-    import sqlite3
-    conn = sqlite3.connect("datasets/freelancer.sqlite")
-    cursor = conn.cursor()
-
-    for dev in devs:
-        cursor.execute('SELECT "rating" FROM "dev_ratings" WHERE "uid" = %d' %
-                        mappings.developers[dev[0]])
-        row = cursor.fetchone()
-        if row is None:
-            return
-
-        dev[1] = row[0]
-
-    devs.sort(key=lambda d: d[1], reverse=True)
-
-    return True
+    getattr(naive, g_config.dataset + "_rate")(developers)
+    developers.sort(key=lambda d: d.rating, reverse=True)
 
 
 def recommend(proba):
-    pairs = []
-    for index, p in enumerate(proba):
-        pairs.append([index, p])
+    developers = []
+    for label, p in enumerate(proba):
+        developers.append(_Developer(-1, label, p))
 
-    pairs.sort(key=lambda pair: pair[1], reverse=True)
+    developers.sort(key=lambda d: d.rating, reverse=True)
 
     nb_rec = min(g_config.topn, len(proba) / 2)
 
@@ -68,16 +61,12 @@ def recommend(proba):
         nb_intact = g_config.rec_list_intact_length
         if nb_intact < nb_rec:
             nb_candidates = (nb_rec - nb_intact) * 2
-            candidates = pairs[nb_intact:(nb_intact + nb_candidates)]
+            candidates = developers[nb_intact:(nb_intact + nb_candidates)]
 
-            if update_ratings(candidates):
-                pairs = pairs[:nb_intact] + candidates
+            update_ratings(candidates)
+            developers = developers[:nb_intact] + candidates
 
-    rec = []
-    for dev in pairs[:nb_rec]:
-        rec.append(dev[0])
-
-    return rec
+    return [dev.label for dev in developers[:nb_rec]]
 
 
 def output_result(classifier, nb_test, nb_correct, diversity):

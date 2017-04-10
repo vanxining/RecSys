@@ -91,10 +91,19 @@ def _topcoder():
         if winner is None:
             continue
 
+        postingDate = challenge[u"postingDate"]
+
         registrants = challenge[u"registrants"]
         registrants.sort(key=lambda r: r[u"registrationDate"])
 
-        developers = [Developer(reg[u"handle"]) for reg in registrants]
+        developers = []
+        for reg in registrants:
+            delta = reg[u"registrationDate"] - postingDate
+            if delta.total_seconds() > g_config.topcoder_deadline * 60:
+                break
+
+            developers.append(Developer(reg[u"handle"]))
+
         topcoder_rate(developers)
 
         yield Project(developers=developers, winner=winner)

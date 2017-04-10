@@ -12,6 +12,9 @@ dataset = "topcoder"
 
 project_limit = 1000
 
+topcoder_deadline = 4096
+freelancer_deadline = 1024
+
 ## 1, 2, 3
 topn = 1
 
